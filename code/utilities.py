@@ -19,7 +19,7 @@ class MultiColumnTargetEncoder:
                 if len(self.encoded_columns) == 0:
                     self.encoded_columns = [col + '_target_encoded']
                 else:
-                    self.encoded_columns = self.encoded_columns.append(col + '_target_encoded')
+                    self.encoded_columns.append(col + '_target_encoded')
                 self.column_value_to_column_encoding[col] = X[self.target_column].groupby(X[col]).agg(['count', 'mean'])
                 self.column_encoding_to_column_value[col] = {}
                 for column_unique_val in self.column_value_to_column_encoding[col].index:
@@ -32,7 +32,7 @@ class MultiColumnTargetEncoder:
                     if len(self.encoded_columns) == 0:
                         self.encoded_columns = [column + '_target_encoded']
                     else:
-                        self.encoded_columns = self.encoded_columns.append(column + '_target_encoded')
+                        self.encoded_columns.append(column + '_target_encoded')
                     self.column_value_to_column_encoding[column] = X[self.target_column].groupby(X[column]).agg(['count', 'mean'])
                     self.column_encoding_to_column_value[column] = {}
                     for column_unique_val in self.column_value_to_column_encoding[column].index:
