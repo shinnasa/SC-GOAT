@@ -40,6 +40,17 @@ class MultiColumnTargetEncoder:
                         output.loc[output[column] == column_unique_val, column + '_target_encoded'] = self.column_value_to_column_encoding[column].loc[column_unique_val]['mean']
         output = output.drop(columns=self.columns)
         return output
+    
+    def transform_test_data(self, X):
+        output = X.copy()
+        for col in self.columns:
+            for column_unique_val in self.column_value_to_column_encoding[col].index:
+                self.column_encoding_to_column_value[col][self.column_value_to_column_encoding[col].loc[column_unique_val]['mean']] = column_unique_val
+                output.loc[output[col] == column_unique_val, col + '_target_encoded'] = self.column_value_to_column_encoding[col].loc[column_unique_val]['mean']
+                
+        output = output.drop(columns=self.columns)
+        return output
+    
     def inverse_transform(self,X):
         output = X.copy()
         for index, column in enumerate(self.encoded_columns):
