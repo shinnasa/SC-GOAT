@@ -132,7 +132,7 @@ x_gauss = sampled_gaussain_capula.loc[:, sampled_gaussain_capula.columns != targ
 y_gauss = sampled_gaussain_capula[target]  
 
 # %%
-sampled_gaussain_capula.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_gaussain_capula.csv", index=False)
+sampled_gaussain_capula.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_capula.csv", index=False)
 
 # %% [markdown]
 # ## CTGAN
@@ -153,7 +153,7 @@ x_ctgan = sampled_ct_gan.loc[:, sampled_ct_gan.columns != target]
 y_ctgan = sampled_ct_gan[target]   
 
 # %%
-sampled_ct_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_ct_gan.csv", index=False)
+sampled_ct_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_ct_gan.csv", index=False)
 
 # %% [markdown]
 # ## CopulaGAN
@@ -174,7 +174,7 @@ x_copgan = sampled_capula_gan.loc[:, sampled_capula_gan.columns != target]
 y_copgan = sampled_capula_gan[target]       
 
 # %%
-sampled_capula_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_capula_gan.csv", index=False)
+sampled_capula_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_capula_gan.csv", index=False)
 
 # %% [markdown]
 # ## TVAE
@@ -195,7 +195,7 @@ x_tvae = sampled_tvae.loc[:, sampled_tvae.columns != target]
 y_tvae = sampled_tvae[target]       
 
 # %%
-sampled_tvae.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_tvae.csv", index=False)
+sampled_tvae.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_tvae.csv", index=False)
 
 # %% [markdown]
 # # Train Downstream Task

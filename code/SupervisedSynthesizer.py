@@ -21,18 +21,20 @@ import sys
 
 # %%
 arguments = sys.argv
-assert len(arguments) > 2
+print("arguments: ", arguments)
+assert len(arguments) > 3
 
 data_set_name = arguments[1]
 target = 'income'
 if data_set_name == 'credit_card':
     target = 'Class'
 
-optimization_itr = int(arguments[2])
+method_name = arguments[2]
+optimization_itr = int(arguments[3])
 
 balanced = False
-if len(arguments) > 3:
-    balanced = arguments[2]
+if len(arguments) > 4:
+    balanced = arguments[4]
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -158,7 +160,7 @@ params_range = {
     'N_sim': 10000,
     'target': 'income',
     'loss': 'ROCAUC',
-    'method': 'CTGAN',
+    'method': method_name,
     'epochs':  np.random.choice([100, 200, 300]),  
     'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
     'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
@@ -222,10 +224,10 @@ best_synth
 
 # %%
 clf_best_param["test_roc"] = best_test_roc
-pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_tuned_models_clf_best_param_xgboost.csv", index=False)
+pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv", index=False)
 
 # %%
 best_synth
-best_synth.to_csv("../data/output/" + prefix + data_set_name + "_tuned_models_synthetic_data_xgboost.csv", index=False)
+best_synth.to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index=False)
 
 
