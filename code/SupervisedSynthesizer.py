@@ -12,7 +12,10 @@ from sdv.metadata import SingleTableMetadata
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 import time
-import utilities
+import os
+os.chdir('code')
+from utilities import *
+os.chdir('..')
 import sys
 
 # %% [markdown]
@@ -22,28 +25,24 @@ import sys
 # %%
 arguments = sys.argv
 print("arguments: ", arguments)
-assert len(arguments) > 3
+# assert len(arguments) > 3
+if len(arguments) > 3:
+    data_set_name = arguments[1]
+    target = 'income'
+    if data_set_name == 'balanced_credit_card' or data_set_name == 'unbalanced_credit_card_balanced':
+        target = 'Class'
 
-data_set_name = arguments[1]
-target = 'income'
-if data_set_name == 'credit_card':
-    target = 'Class'
+    method_name = arguments[2]
+    optimization_itr = int(arguments[3])
+else:
+    data_set_name = 'adult'
+    method_name = 'CTGAN'
+    optimization_itr = 1000
 
-method_name = arguments[2]
-optimization_itr = int(arguments[3])
 
-balanced = False
-if len(arguments) > 4:
-    balanced = arguments[4]
 
-prefix = ''
-if data_set_name == 'credit_card':
-    if balanced:
-        prefix = 'balanced_'
-    else:
-        prefix = 'unbalanced_'
+df_original = load_data(data_set_name)
 
-df_original = utilities.load_data(data_set_name, balanced)
 
 # %%
 df = df_original.copy()
