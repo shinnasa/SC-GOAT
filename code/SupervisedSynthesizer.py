@@ -223,6 +223,46 @@ def trainDT(max_evals:int):
     return best_test_roc, best_synth, clf_best_param, clf_auc_history
 
 # %%
+def getparams(method_name):
+    if method_name == 'GaussianCopula':
+        return {}
+    elif method_name == 'TVAE':
+        params_range = {
+        'N_sim': 10000,
+        'target': 'income',
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  np.random.choice([100, 200, 300]),  
+        'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
+        'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
+        'g_dim2':  hp.randint('g_dim2',1, 3), # multiple of 128
+        'g_dim3':  hp.randint('g_dim3',0, 3), # multiple of 128
+        'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
+        'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
+        'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
+        'd_lr': np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),  
+        "g_lr": np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),
+        } 
+        return params_range
+    else:
+        params_range = {
+        'N_sim': 10000,
+        'target': 'income',
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  np.random.choice([100, 200, 300]),  
+        'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
+        'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
+        'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
+        'c_dim3':  hp.randint('c_dim3',0, 3), # multiple of 64
+        'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 64
+        'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 64
+        'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 64
+        } 
+        return params_range
+
+
+params_range = getparams(method_name)
 best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(optimization_itr)
 
 # %%
