@@ -281,7 +281,7 @@ def objective_maximize_roc(params):
     params['test_roc']        = clf_auc
 
     if output.size == 0:
-        output = pd.DataFrame.from_dict(output)
+        output = pd.DataFrame.from_dict(params)
     else:
         output = pd.concat((output, params))
     
@@ -321,10 +321,10 @@ def trainDT(max_evals:int):
                     trials=trials)
     print(clf_best_param)
     print('It takes %s minutes' % ((time.time() - start)/60))
-    return best_test_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param
+    return best_test_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, output
 
 # %%
-best_test_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param = trainDT(optimization_itr)
+best_test_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, params_history = trainDT(optimization_itr)
 
 # %%
 best_test_roc
@@ -337,6 +337,9 @@ best_X_synthetic
 
 # %%
 best_params
+
+# %%
+params_history
 
 # %%
 def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced:bool=False):
@@ -363,3 +366,5 @@ save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic)
 
 clf_best_param["test_roc"] = best_test_roc
 pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_untuned_models_clf_best_param_xgboost.csv", index=False)
+
+params_history.to_csv("../data/history/" + prefix + data_set_name + "_untuned_models_params_alpha_history.csv", index=False)

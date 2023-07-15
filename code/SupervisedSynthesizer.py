@@ -176,6 +176,7 @@ params_range = {
 
 # %%
 def objective_maximize(params):
+    global clf_auc_history
     global best_test_roc 
     global best_synth
     synth = fit_synth(df_train, params)
@@ -188,6 +189,13 @@ def objective_maximize(params):
         best_test_roc = clf_auc
         best_synth = sampled
     
+    if clf_auc_history.size == 0:
+        output_ = {'test_roc' : [clf_auc]}
+        clf_auc_history = pd.DataFrame.from_dict(output_)
+    else:
+        output_ = {'test_roc' : [clf_auc]}
+        clf_auc_history = pd.concat((clf_auc_history,  pd.DataFrame.from_dict(output_)))
+
     return {
         'loss' : 1 - clf_auc,
         'status' : STATUS_OK,
@@ -199,7 +207,8 @@ def objective_maximize(params):
 def trainDT(max_evals:int):
     global best_test_roc
     global best_synth
-    
+    global clf_auc_history
+    clf_auc_history = pd.DataFrame()
     best_test_roc = 0
     trials = Trials()
     start = time.time()
@@ -211,10 +220,10 @@ def trainDT(max_evals:int):
                     trials=trials)
     print(clf_best_param)
     print('It takes %s minutes' % ((time.time() - start)/60))
-    return best_test_roc, best_synth, clf_best_param
+    return best_test_roc, best_synth, clf_best_param, clf_auc_history
 
 # %%
-best_test_roc, best_synth, clf_best_param = trainDT(optimization_itr)
+best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(optimization_itr)
 
 # %%
 best_test_roc
@@ -223,11 +232,13 @@ best_test_roc
 best_synth
 
 # %%
+clf_auc_history
+
+# %%
 clf_best_param["test_roc"] = best_test_roc
 pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv", index=False)
 
 # %%
-best_synth
 best_synth.to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index=False)
 
-
+clf_auc_history.to_csv("..data//history/" + prefix + data_set_name + "_tuned_" + method_name + "_history_auc_score_xgboost.csv", index=False)
