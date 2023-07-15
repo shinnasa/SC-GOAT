@@ -22,6 +22,7 @@ import sys
 
 # %%
 arguments = sys.argv
+print('arguments: ', arguments)
 assert len(arguments) > 2
 
 data_set_name = arguments[1]
@@ -33,7 +34,7 @@ optimization_itr = int(arguments[2])
 
 balanced = False
 if len(arguments) > 3:
-    balanced = arguments[2]
+    balanced = eval(arguments[3])
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -118,7 +119,7 @@ def downstream_loss(sampled, df_te, target, classifier):
 
 # %%
 method = "GaussianCopula"
-epoch = 300
+epoch = 150
 synth = fit_synth(df_train, method, epoch)
 synth.fit(df_train)
 N_sim = 10000
@@ -139,7 +140,7 @@ sampled_gaussain_capula.to_csv('../data/' + data_set_name + "/" + prefix + data_
 
 # %%
 method = "CTGAN"
-epoch = 300
+epoch = 150
 synth = fit_synth(df_train, method, epoch)
 synth.fit(df_train)
 N_sim = 10000
@@ -160,7 +161,7 @@ sampled_ct_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_name 
 
 # %%
 method = "CopulaGAN"
-epoch = 300
+epoch = 150
 synth = fit_synth(df_train, method, epoch)
 synth.fit(df_train)
 N_sim = 10000
@@ -181,7 +182,7 @@ sampled_capula_gan.to_csv('../data/' + data_set_name + "/" + prefix + data_set_n
 
 # %%
 method = "TVAE"
-epoch = 300
+epoch = 150
 synth = fit_synth(df_train, method, epoch)
 synth.fit(df_train)
 N_sim = 10000
@@ -280,10 +281,7 @@ def objective_maximize_roc(params):
     params['train_roc']        = clf_auc_train
     params['test_roc']        = clf_auc
 
-    if output.size == 0:
-        output = pd.DataFrame.from_dict(params)
-    else:
-        output = pd.concat((output, params))
+    output = output._append(params, ignore_index = True)
     
     # Update best record of the loss function and the alpha values based on the optimization
     if params['test_roc'] > best_test_roc:
@@ -353,18 +351,23 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
     elif data_set_name == 'credit_card':
         target = 'class'
         synthetic_data[target] = best_y_synthetic
+        prefix = 'unbalanced_'
         if balanced:
-            synthetic_data.to_csv("../data/output/balanced_" + data_set_name + "_untuned_models_synthetic_data_xgboost.csv", index=False)
+            prefix = 'balanced_'
+        if balanced:
+            synthetic_data.to_csv("../data/output/balanced_" + prefix + data_set_name + "_untuned_models_synthetic_data_xgboost.csv", index=False)
         else:
-            synthetic_data.to_csv("../data/output/unbalanced_" + data_set_name + "_untuned_models_synthetic_data_xgboost.csv", index=False)
+            synthetic_data.to_csv("../data/output/unbalanced_" + prefix + data_set_name + "_untuned_models_synthetic_data_xgboost.csv", index=False)
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
     return synthetic_data
 
 # %%
-save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic)
+save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced)
 
 clf_best_param["test_roc"] = best_test_roc
-pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_untuned_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df = pd.DataFrame()
+clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
+clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + "_untuned_models_clf_best_param_xgboost.csv", index=False)
 
 params_history.to_csv("../data/history/" + prefix + data_set_name + "_untuned_models_params_alpha_history.csv", index=False)

@@ -34,7 +34,7 @@ optimization_itr = int(arguments[3])
 
 balanced = False
 if len(arguments) > 4:
-    balanced = arguments[4]
+    balanced = eval(arguments[4])
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -276,7 +276,9 @@ clf_auc_history
 
 # %%
 clf_best_param["test_roc"] = best_test_roc
-pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df = pd.DataFrame()
+clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
+clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv", index=False)
 
 # %%
 best_synth.to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index=False)
