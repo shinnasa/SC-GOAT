@@ -115,9 +115,7 @@ def save_test_train_data(data_set_name, df_train, df_test, balanced:bool=False):
     
 # Function to fit the synthesizers
 def fit_synth(df, params):
-    params_xgb = {
-        'eval_metric': 'auc'
-    }
+    
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
@@ -164,6 +162,9 @@ def fit_synth(df, params):
 
 # Function for downstream loss calculation
 def downstream_loss(sampled, df_te, target, classifier):
+    params_xgb = {
+        'eval_metric': 'auc'
+    }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
     x_test = df_te.loc[:, sampled.columns != target]
