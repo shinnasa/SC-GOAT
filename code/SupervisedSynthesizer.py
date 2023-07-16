@@ -68,7 +68,7 @@ x_test
 
 
 params_range = getparams(method_name)
-best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(optimization_itr)
+best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(dftr=df_train, dfte=df_test, targ = target, max_evals=optimization_itr, method_name=method_name)
 
 best_test_roc
 

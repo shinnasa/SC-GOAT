@@ -121,8 +121,9 @@ def fit_synth(df, params):
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
+    print(params, method)
     if method == "GaussianCopula":
-        synth = GaussianCopulaSynthesizer(metadata=metadata)
+        synth = GaussianCopulaSynthesizer(metadata=metadata, verbose=True)
     elif method == "CTGAN" or method =="CopulaGAN":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
@@ -139,11 +140,11 @@ def fit_synth(df, params):
         if method == "CTGAN":
             synth = CTGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim, 
                                      discriminator_dim=discriminator_dim, generator_lr=generator_lr, 
-                                     discriminator_lr=discriminator_lr)
+                                     discriminator_lr=discriminator_lr, verbose=True)
         if method == "CopulaGAN":
             synth = CopulaGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim,
                                          discriminator_dim=discriminator_dim, generator_lr=generator_lr,
-                                         discriminator_lr=discriminator_lr)
+                                         discriminator_lr=discriminator_lr, verbose=True)
     elif method == "TVAE":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
@@ -156,7 +157,7 @@ def fit_synth(df, params):
         else:
             decompress_dims = (64*params['d_dim1'], 64*params['d_dim2'])
         synth = TVAESynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, compress_dims=compress_dims, 
-                                 decompress_dims=decompress_dims)
+                                 decompress_dims=decompress_dims, verbose=True)
     else:
         raise ValueError("Invalid model name: " + method)
     return synth
@@ -188,12 +189,17 @@ def objective_maximize(params):
     global clf_auc_history
     global best_test_roc 
     global best_synth
+    global dftrain
+    global dftest
+    global target
+    global params_range
     synth = fit_synth(df_train, params)
     synth.fit(df_train)
+
     N_sim = params["N_sim"]
     sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
-
+    print(clf_auc)
     if clf_auc > best_test_roc:
         best_test_roc = clf_auc
         best_synth = sampled
@@ -213,10 +219,18 @@ def objective_maximize(params):
         }
 
 # The Bayesian optimizer
-def trainDT(max_evals:int):
+def trainDT(dftr, dfte, targ, max_evals:int, method_name):
     global best_test_roc
     global best_synth
     global clf_auc_history
+    global df_train
+    global df_test
+    global target
+    global params_range
+    params_range = getparams(method_name)
+    df_train = dftr.copy()
+    df_test = dfte.copy()
+    target = targ
     clf_auc_history = pd.DataFrame()
     best_test_roc = 0
     trials = Trials()
@@ -235,7 +249,7 @@ def trainDT(max_evals:int):
 def getparams(method_name):
     if method_name == 'GaussianCopula':
         return {}
-    elif method_name == 'TVAE':
+    elif method_name == 'CTGAN' or method_name == "CopulaGAN":
         params_range = {
         'N_sim': 10000,
         'target': 'income',
