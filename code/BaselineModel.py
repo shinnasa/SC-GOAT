@@ -15,6 +15,7 @@ import time
 import utilities
 import random
 import sys
+import os
 
 # %% [markdown]
 # # Load data
@@ -24,7 +25,7 @@ import sys
 arguments = sys.argv
 print('arguments: ', arguments)
 assert len(arguments) > 2
-
+print(os.getcwd())
 data_set_name = arguments[1]
 target = 'income'
 if data_set_name == 'credit_card':
@@ -43,7 +44,9 @@ if data_set_name == 'credit_card':
     else:
         prefix = 'unbalanced_'
 
-df_original = utilities.load_data(data_set_name, balanced)
+data_set_name_temp = prefix + data_set_name
+
+df_original = utilities.load_data_original(data_set_name, balanced)
 
 # %%
 df = df_original.copy()
@@ -51,8 +54,7 @@ df = df_original.copy()
 # %%
 df_train, df_test = train_test_split(df, test_size = 0.2,  random_state = 5)
 
-utilities.save_test_train_data(data_set_name, df_train, df_test, balanced)
-
+# utilities.save_test_train_data(data_set_name, df_train, df_test, balanced)
 # %%
 x_train = df_train.loc[:, df_train.columns != target]
 y_train = df_train[target]
@@ -65,7 +67,6 @@ x_train
 
 # %%
 x_test
-
 
 # %% [markdown]
 # ## Create Supervised Synthesizers
@@ -116,6 +117,9 @@ def downstream_loss(sampled, df_te, target, classifier):
 
 # %% [markdown]
 # ## GaussianCopula
+
+#Starting time count
+start_time = time.time()
 
 # %%
 method = "GaussianCopula"
@@ -209,7 +213,7 @@ params_range = {
             'alpha_4':  hp.uniform('alpha_4', 0, 1),
             'generated_data_size': 10000
            } 
-num_boost_round = 1000
+# num_boost_round = 1000
 
 # %%
 def objective_maximize_roc(params):
@@ -270,7 +274,7 @@ def objective_maximize_roc(params):
             x_test_real[column] = x_test_real[column].astype('category')
     dtrain = xgb.DMatrix(data=X_new, label=y_new, enable_categorical=True)
     dtest = xgb.DMatrix(data=x_test_real, label=y_test_real, enable_categorical=True)
-    clf = xgb.train(params = {}, dtrain=dtrain, num_boost_round=num_boost_round, verbose_eval=False)
+    clf = xgb.train(params = {}, dtrain=dtrain, verbose_eval=False)
 
     # Evaluate the performance of the classifier
     clf_probs = clf.predict(dtest)
@@ -324,6 +328,8 @@ def trainDT(max_evals:int):
 # %%
 best_test_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, params_history = trainDT(optimization_itr)
 
+end_time = time.time()
+
 # %%
 best_test_roc
 
@@ -366,6 +372,7 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
 save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced)
 
 clf_best_param["test_roc"] = best_test_roc
+clf_best_param["total_time"] = end_time - start_time
 clf_best_param_df = pd.DataFrame()
 clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
 clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + "_untuned_models_clf_best_param_xgboost.csv", index=False)

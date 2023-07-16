@@ -24,7 +24,7 @@ print("arguments: ", arguments)
 if len(arguments) > 3:
     data_set_name = arguments[1]
     target = 'income'
-    if data_set_name == 'balanced_credit_card' or data_set_name == 'unbalanced_credit_card_balanced':
+    if data_set_name == 'balanced_credit_card' or data_set_name == 'unbalanced_credit_card':
         target = 'Class'
 
     method_name = arguments[2]
