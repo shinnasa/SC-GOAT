@@ -22,6 +22,60 @@ import csv
 import warnings
 warnings.simplefilter("ignore")
 
+
+# Defines objective function for the Bayesian optimizer
+def objective_maximize(params):
+    global clf_auc_history
+    global best_test_roc 
+    global best_synth
+    global params_range
+    synth = fit_synth(df_train, params)
+    synth.fit(df_train)
+
+    N_sim = params["N_sim"]
+    sampled = synth.sample(num_rows = N_sim)
+    clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
+    print(clf_auc)
+    if clf_auc > best_test_roc:
+        best_test_roc = clf_auc
+        best_synth = sampled
+    if clf_auc_history.size == 0:
+        output_ = {'test_roc' : [clf_auc]}
+        clf_auc_history = pd.DataFrame.from_dict(output_)
+    else:
+        output_ = {'test_roc' : [clf_auc]}
+        clf_auc_history = pd.concat((clf_auc_history,  pd.DataFrame.from_dict(output_)))
+
+    return {
+        'loss' : 1 - clf_auc,
+        'status' : STATUS_OK,
+        'eval_time ': time.time(),
+        'test_roc' : clf_auc,
+        }
+
+# The Bayesian optimizer
+def trainDT(max_evals:int, method_name):
+    global best_test_roc
+    global best_synth
+    global clf_auc_history
+    global params_range
+    params_range = getparams(method_name)
+    clf_auc_history = pd.DataFrame()
+    best_test_roc = 0
+    trials = Trials()
+    start = time.time()
+    clf_best_param = fmin(fn=objective_maximize,
+                    space=params_range,
+                    max_evals=max_evals,
+                    # rstate=np.random.default_rng(42),
+                    early_stop_fn=no_progress_loss(10),
+                    algo=tpe.suggest,
+                    trials=trials)
+    print(clf_best_param)
+    print(best_test_roc)
+    print('It takes %s minutes' % ((time.time() - start)/60))
+    return best_test_roc, best_synth, clf_best_param, clf_auc_history
+
 # Load data and create train test split from the smaller dataset that contains 10% of the full data
 arguments = sys.argv
 print("arguments: ", arguments)
@@ -36,10 +90,11 @@ if len(arguments) > 3:
     optimization_itr = int(arguments[3])
 else:
     data_set_name = 'adult'
-    method_name = 'CTGAN'
+    method_name = 'TVAE'
     optimization_itr = 350
+    target = 'income'
 
-df_original, target = load_data(data_set_name)
+df_original = load_data(data_set_name)
 
 df = df_original.copy()
 if len(df) > 50000:
@@ -47,6 +102,8 @@ if len(df) > 50000:
 
 df_train, df_test = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
 df_test, df_val = train_test_split(df_test, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+
+
 
 # df = df_original.copy()
 # df_modified = target_encoder.transform(df)
@@ -67,7 +124,7 @@ df_test, df_val = train_test_split(df_test, test_size = 1 - 0.666,  random_state
 
 params_range = getparams(method_name)
 start_time = time.time()
-best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(dftr=df_train, dfte=df_test, targ = target, max_evals=optimization_itr, method_name=method_name)
+best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(max_evals=optimization_itr, method_name=method_name)
 elapsed_time = time.time() - start_time
 best_test_roc
 
