@@ -256,7 +256,7 @@ def getparams(method_name):
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  np.random.choice([100, 200, 300]),  
+        'epochs':  150,  
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
         'g_dim2':  hp.randint('g_dim2',1, 3), # multiple of 128
@@ -264,8 +264,8 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
-        'd_lr': np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),  
-        "g_lr": np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),
+        'd_lr': np.random.choice([2e-4, 1e-3]),  
+        "g_lr": np.random.choice([2e-4, 1e-3]),
         } 
         return params_range
     else:
@@ -274,7 +274,7 @@ def getparams(method_name):
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  np.random.choice([100, 200, 300]),  
+        'epochs':  150,  
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
         'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
