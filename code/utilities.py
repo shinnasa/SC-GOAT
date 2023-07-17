@@ -116,7 +116,6 @@ def save_test_train_data(data_set_name, df_train, df_test, balanced:bool=False):
     
 # Function to fit the synthesizers
 def fit_synth(df, params):
-    
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
@@ -191,8 +190,8 @@ def objective_maximize(params):
     global clf_auc_history
     global best_test_roc 
     global best_synth
-    global dftrain
-    global dftest
+    global df_train
+    global df_test
     global target
     global params_range
     synth = fit_synth(df_train, params)
@@ -245,6 +244,7 @@ def trainDT(dftr, dfte, targ, max_evals:int, method_name):
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
+    print(best_test_roc)
     print('It takes %s minutes' % ((time.time() - start)/60))
     return best_test_roc, best_synth, clf_best_param, clf_auc_history
 
