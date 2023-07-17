@@ -10,6 +10,7 @@ from sdv.single_table import CopulaGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
+from hyperopt.early_stop import no_progress_loss
 import time
 import sys
 # Create class for encoding
@@ -239,7 +240,8 @@ def trainDT(dftr, dfte, targ, max_evals:int, method_name):
     clf_best_param = fmin(fn=objective_maximize,
                     space=params_range,
                     max_evals=max_evals,
-                   # rstate=np.random.default_rng(42),
+                    # rstate=np.random.default_rng(42),
+                    early_stop_fn=no_progress_loss(10),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
@@ -264,8 +266,8 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
-        'd_lr': np.random.choice([2e-4, 1e-3]),  
-        "g_lr": np.random.choice([2e-4, 1e-3]),
+        'd_lr': hp.uniform('d_lr', 2e-5, 1e-2),
+        "g_lr": hp.uniform('g_lr', 2e-5, 1e-2),
         } 
         return params_range
     else:

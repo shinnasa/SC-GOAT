@@ -9,6 +9,7 @@ from sdv.single_table import TVAESynthesizer
 from sdv.single_table import CopulaGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sklearn.tree import DecisionTreeClassifier
+from hyperopt.early_stop import no_progress_loss
 import xgboost as xgb
 import time
 import os
@@ -32,7 +33,7 @@ if len(arguments) > 3:
 else:
     data_set_name = 'adult'
     method_name = 'CTGAN'
-    optimization_itr = 1000
+    optimization_itr = 350
 
 df_original, target = load_data(data_set_name)
 
