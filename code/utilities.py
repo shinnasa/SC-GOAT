@@ -97,7 +97,7 @@ def load_data(data_set_name:str):
             df_original = pd.read_csv(credit_card_data_set_dir + '/' + unbalaned_credit_card_data_set_csv_file_name + '.csv')
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
-    return df_original, target
+    return df_original
 
 def load_data_original(data_set_name:str, balanced:bool=False):
     adult_data_set_dir = "../data/adult"
@@ -143,7 +143,6 @@ def save_test_train_data(data_set_name, df_train, df_test, balanced:bool=False):
     
 # Function to fit the synthesizers
 def fit_synth(df, params):
-    
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
@@ -183,7 +182,7 @@ def fit_synth(df, params):
         else:
             decompress_dims = (64*params['d_dim1'], 64*params['d_dim2'])
         synth = TVAESynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, compress_dims=compress_dims, 
-                                 decompress_dims=decompress_dims, verbose=True)
+                                 decompress_dims=decompress_dims)
     else:
         raise ValueError("Invalid model name: " + method)
     return synth
@@ -191,7 +190,7 @@ def fit_synth(df, params):
 # Function for downstream loss calculation
 def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
-        'eval_metric': 'auc'
+        'eval_metric': 'auc', 'objective':'binary:logistic'
     }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
@@ -206,78 +205,19 @@ def downstream_loss(sampled, df_te, target, classifier = "XGB"):
         dtest = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
         clf = xgb.train(params_xgb, dtrain, 1000, verbose_eval=False)
         clf_probs = clf.predict(dtest)
-        print(clf_probs)
+
+        print([min(clf_probs), max(clf_probs)])
         clf_auc = roc_auc_score(y_test.values.astype(float), clf_probs)
         return clf_auc
     else:
         raise ValueError("Invalid classifier: " + classifier)
         
 
-# Defines objective function for the Bayesian optimizer
-def objective_maximize(params):
-    global clf_auc_history
-    global best_test_roc 
-    global best_synth
-    global dftrain
-    global dftest
-    global target
-    global params_range
-    synth = fit_synth(df_train, params)
-    synth.fit(df_train)
 
-    N_sim = params["N_sim"]
-    sampled = synth.sample(num_rows = N_sim)
-    clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
-    print(clf_auc)
-    if clf_auc > best_test_roc:
-        best_test_roc = clf_auc
-        best_synth = sampled
-    
-    if clf_auc_history.size == 0:
-        output_ = {'test_roc' : [clf_auc]}
-        clf_auc_history = pd.DataFrame.from_dict(output_)
-    else:
-        output_ = {'test_roc' : [clf_auc]}
-        clf_auc_history = pd.concat((clf_auc_history,  pd.DataFrame.from_dict(output_)))
-
-    return {
-        'loss' : 1 - clf_auc,
-        'status' : STATUS_OK,
-        'eval_time ': time.time(),
-        'test_roc' : clf_auc,
-        }
-
-# The Bayesian optimizer
-def trainDT(dftr, dfte, targ, max_evals:int, method_name):
-    global best_test_roc
-    global best_synth
-    global clf_auc_history
-    global df_train
-    global df_test
-    global target
-    global params_range
-    params_range = getparams(method_name)
-    df_train = dftr.copy()
-    df_test = dfte.copy()
-    target = targ
-    clf_auc_history = pd.DataFrame()
-    best_test_roc = 0
-    trials = Trials()
-    start = time.time()
-    clf_best_param = fmin(fn=objective_maximize,
-                    space=params_range,
-                    max_evals=max_evals,
-                    # rstate=np.random.default_rng(42),
-                    early_stop_fn=no_progress_loss(10),
-                    algo=tpe.suggest,
-                    trials=trials)
-    print(clf_best_param)
-    print('It takes %s minutes' % ((time.time() - start)/60))
-    return best_test_roc, best_synth, clf_best_param, clf_auc_history
 
 # Get parameters depending on the synthesizer
 def getparams(method_name):
-    epoch = 150
+    epoch = 30
     if method_name == 'GaussianCopula':
         return {}
     elif method_name == 'CTGAN' or method_name == "CopulaGAN":
@@ -305,7 +245,7 @@ def getparams(method_name):
         'loss': 'ROCAUC',
         'method': method_name,
         'epochs':  epoch,
-        'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
+        'batch_size':  5, #hp.randint('batch_size',1, 5), # multiple of 100
         'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
         'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
         'c_dim3':  hp.randint('c_dim3',0, 3), # multiple of 64
