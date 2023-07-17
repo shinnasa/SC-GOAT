@@ -10,6 +10,7 @@ from sdv.single_table import CopulaGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
+from hyperopt.early_stop import no_progress_loss
 import time
 import sys
 # Create class for encoding
@@ -142,14 +143,13 @@ def save_test_train_data(data_set_name, df_train, df_test, balanced:bool=False):
     
 # Function to fit the synthesizers
 def fit_synth(df, params):
-    params_xgb = {
-        'eval_metric': 'auc'
-    }
+    
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
+    print(params, method)
     if method == "GaussianCopula":
-        synth = GaussianCopulaSynthesizer(metadata=metadata)
+        synth = GaussianCopulaSynthesizer(metadata=metadata, verbose=True)
     elif method == "CTGAN" or method =="CopulaGAN":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
@@ -166,11 +166,11 @@ def fit_synth(df, params):
         if method == "CTGAN":
             synth = CTGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim, 
                                      discriminator_dim=discriminator_dim, generator_lr=generator_lr, 
-                                     discriminator_lr=discriminator_lr)
+                                     discriminator_lr=discriminator_lr, verbose=True)
         if method == "CopulaGAN":
             synth = CopulaGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim,
                                          discriminator_dim=discriminator_dim, generator_lr=generator_lr,
-                                         discriminator_lr=discriminator_lr)
+                                         discriminator_lr=discriminator_lr, verbose=True)
     elif method == "TVAE":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
@@ -183,13 +183,16 @@ def fit_synth(df, params):
         else:
             decompress_dims = (64*params['d_dim1'], 64*params['d_dim2'])
         synth = TVAESynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, compress_dims=compress_dims, 
-                                 decompress_dims=decompress_dims)
+                                 decompress_dims=decompress_dims, verbose=True)
     else:
         raise ValueError("Invalid model name: " + method)
     return synth
 
 # Function for downstream loss calculation
-def downstream_loss(sampled, df_te, target, classifier):
+def downstream_loss(sampled, df_te, target, classifier = "XGB"):
+    params_xgb = {
+        'eval_metric': 'auc'
+    }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
     x_test = df_te.loc[:, sampled.columns != target]
@@ -215,12 +218,17 @@ def objective_maximize(params):
     global clf_auc_history
     global best_test_roc 
     global best_synth
+    global dftrain
+    global dftest
+    global target
+    global params_range
     synth = fit_synth(df_train, params)
     synth.fit(df_train)
+
     N_sim = params["N_sim"]
     sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
-
+    print(clf_auc)
     if clf_auc > best_test_roc:
         best_test_roc = clf_auc
         best_synth = sampled
@@ -240,10 +248,18 @@ def objective_maximize(params):
         }
 
 # The Bayesian optimizer
-def trainDT(max_evals:int):
+def trainDT(dftr, dfte, targ, max_evals:int, method_name):
     global best_test_roc
     global best_synth
     global clf_auc_history
+    global df_train
+    global df_test
+    global target
+    global params_range
+    params_range = getparams(method_name)
+    df_train = dftr.copy()
+    df_test = dfte.copy()
+    target = targ
     clf_auc_history = pd.DataFrame()
     best_test_roc = 0
     trials = Trials()
@@ -251,7 +267,8 @@ def trainDT(max_evals:int):
     clf_best_param = fmin(fn=objective_maximize,
                     space=params_range,
                     max_evals=max_evals,
-                   # rstate=np.random.default_rng(42),
+                    # rstate=np.random.default_rng(42),
+                    early_stop_fn=no_progress_loss(10),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
@@ -260,15 +277,16 @@ def trainDT(max_evals:int):
 
 # Get parameters depending on the synthesizer
 def getparams(method_name):
+    epoch = 150
     if method_name == 'GaussianCopula':
         return {}
-    elif method_name == 'TVAE':
+    elif method_name == 'CTGAN' or method_name == "CopulaGAN":
         params_range = {
         'N_sim': 10000,
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  np.random.choice([100, 200, 300]),  
+        'epochs':  epoch,  
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
         'g_dim2':  hp.randint('g_dim2',1, 3), # multiple of 128
@@ -276,8 +294,8 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
-        'd_lr': np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),  
-        "g_lr": np.random.choice([1e-4, 2e-4, 1e-3, 2e-3, 1e-2, 2e-2, 1e-1]),
+        'd_lr': hp.uniform('d_lr', 2e-5, 1e-2),
+        "g_lr": hp.uniform('g_lr', 2e-5, 1e-2),
         } 
         return params_range
     else:
@@ -286,7 +304,7 @@ def getparams(method_name):
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  np.random.choice([100, 200, 300]),  
+        'epochs':  epoch,
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
         'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
