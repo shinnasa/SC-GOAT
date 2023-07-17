@@ -162,7 +162,7 @@ def fit_synth(df, params):
     return synth
 
 # Function for downstream loss calculation
-def downstream_loss(sampled, df_te, target, classifier):
+def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
         'eval_metric': 'auc'
     }

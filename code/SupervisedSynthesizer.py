@@ -38,8 +38,11 @@ else:
 df_original, target = load_data(data_set_name)
 
 df = df_original.copy()
+if len(df) > 50000:
+    df = df.sample(50000, replace = False, random_state = 5)
 
-df_train, df_test = train_test_split(df, test_size = 0.2,  random_state = 5)
+df_train, df_test = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
+df_test, df_val = train_test_split(df_test, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
 
 x_train = df_train.loc[:, df_train.columns != target]
 y_train = df_train[target]
@@ -77,9 +80,10 @@ best_synth
 
 clf_auc_history
 
+validation_auc = downstream_loss(best_synth, df__val, target, classifier = "XGB")
+
 clf_best_param["test_roc"] = best_test_roc
 pd.DataFrame.from_dict(clf_best_param).to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv", index=False)
-
+pd.DataFrame.from_dict(validation_auc).to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_clf_validation_auc.csv", index=False)
 best_synth.to_csv("../data/output/" + prefix + data_set_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index=False)
-
 clf_auc_history.to_csv("..data//history/" + prefix + data_set_name + "_tuned_" + method_name + "_history_auc_score_xgboost.csv", index=False)
