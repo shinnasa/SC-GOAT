@@ -250,6 +250,7 @@ def trainDT(dftr, dfte, targ, max_evals:int, method_name):
 
 # Get parameters depending on the synthesizer
 def getparams(method_name):
+    epoch = 150
     if method_name == 'GaussianCopula':
         return {}
     elif method_name == 'CTGAN' or method_name == "CopulaGAN":
@@ -258,7 +259,7 @@ def getparams(method_name):
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  150,  
+        'epochs':  epoch,  
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
         'g_dim2':  hp.randint('g_dim2',1, 3), # multiple of 128
@@ -276,7 +277,7 @@ def getparams(method_name):
         'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
-        'epochs':  150,  
+        'epochs':  epoch,
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
         'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
