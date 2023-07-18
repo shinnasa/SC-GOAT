@@ -26,7 +26,7 @@ warnings.filterwarnings('ignore')
 # %%
 arguments = sys.argv
 print('arguments: ', arguments)
-assert len(arguments) > 2
+assert len(arguments) > 3
 print(os.getcwd())
 data_set_name = arguments[1]
 target = 'income'
@@ -35,9 +35,14 @@ if data_set_name == 'credit_card':
 
 optimization_itr = int(arguments[2])
 
-balanced = False
+encode = False
+
 if len(arguments) > 3:
-    balanced = eval(arguments[3])
+    encode = eval(arguments[3])
+
+balanced = False
+if len(arguments) > 4:
+    balanced = eval(arguments[4])
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -45,6 +50,16 @@ if data_set_name == 'credit_card':
         prefix = 'balanced_'
     else:
         prefix = 'unbalanced_'
+
+if encode:
+    prefix =  "encoded_" + prefix 
+
+print('data_set_name: ', data_set_name)
+print('target: ', target)
+print('optimization_itr: ', optimization_itr)
+print('encode: ', encode)
+print('balanced: ', balanced)
+print('prefix: ', prefix)
 
 data_set_name_temp = prefix + data_set_name
 
@@ -57,8 +72,31 @@ df = df_original.copy()
 if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
 # %%
-df_train, df_test = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
-df_test, df_val = train_test_split(df_test, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+
+categorical_columns = []
+
+for column in df.columns:
+    if (column != target) & (df[column].dtype == 'object'):
+        categorical_columns.append(column)
+
+encoder = utilities.MultiColumnTargetEncoder(categorical_columns, target)
+
+def get_train_validation_test_data(df, encode):
+    df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
+    df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+
+    if encode:
+        df_train = encoder.transform(df_train_original)
+
+        df_val = encoder.transform_test_data(df_val_original)
+
+        df_test = encoder.transform_test_data(df_test_original)
+
+        return df_train, df_val, df_test
+    else:
+        return df_train_original, df_val_original, df_test_original
+
+df_train, df_val, df_test = get_train_validation_test_data(df, encode)
 
 # print(len(df[df[target] == 0]) /len(df))
 # print(len(df_train))
@@ -91,7 +129,9 @@ x_test
 params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
-        'max_delta_step' : 1.0
+        'seed' : 123,
+        'scale_pos_weight' : len(df_train[df_train[target] == 1]) / len(df_train)
+        # 'scale_pos_weight' : len(df_train[df_train[target] == 0]) / len(df_train[df_train[target] == 1])
 }
 
 def fit_synth(df, method, epoch):
@@ -325,8 +365,6 @@ if train:
         
         clf_probs_train = clf.predict(dtrain)
         clf_auc_train = roc_auc_score(y_new.astype(float), clf_probs_train)
-        print(min(clf_probs_train))
-        print(max(clf_probs_train))
         params['train_roc']        = clf_auc_train
         params['val_roc']        = clf_auc
 
@@ -422,6 +460,9 @@ if train:
             raise ValueError("Invalid data set name: " + data_set_name)
         return synthetic_data
 
+    if encode:
+        best_X_synthetic = encoder.inverse_transform(best_X_synthetic)
+
     # %%
     save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced)
 
@@ -441,6 +482,9 @@ if train:
     clf_best_param["total_time_CopulaGAN"] = end_time_CopulaGAN - start_time_CopulaGAN
     clf_best_param["total_time_TVAE"] = end_time_TVAE - start_time_TVAE
     clf_best_param["total_time_BO"] = total_time_BO
+
+    print('clf_best_param: ', clf_best_param)
+
     clf_best_param_df = pd.DataFrame()
     clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
     clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + "_untuned_models_clf_best_param_xgboost.csv", index=False)
@@ -518,6 +562,8 @@ else:
     individual_clf_auc["total_time_CTGAN"] = end_time_CTGAN - start_time_CTGAN
     individual_clf_auc["total_time_CopulaGAN"] = end_time_CopulaGAN - start_time_CopulaGAN
     individual_clf_auc["total_time_TVAE"] = end_time_TVAE - start_time_TVAE
+
+    print('individual_clf_auc: ', individual_clf_auc)
 
     individual_clf_auc_df = pd.DataFrame()
     individual_clf_auc_df = individual_clf_auc_df._append(individual_clf_auc, ignore_index = True)

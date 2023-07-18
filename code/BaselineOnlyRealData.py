@@ -66,8 +66,12 @@ y_test = df_test[target]
 
 params_xgb = {
         'eval_metric' : 'auc',
-        'objective' : 'binary:logistic'
+        'objective' : 'binary:logistic',
+        'seed': 123,
+        'scale_pos_weight' : len(df_train[df_train[target] == 0]) / len(df_train[df_train[target] == 1])
 }
+
+print('params_xgb: ', params_xgb)
 
 def downstream_loss(real, df_val, target, classifier):
     x_train = real.loc[:, real.columns != target]
@@ -106,6 +110,8 @@ baseline_real_clf_auc = {'clf_auc_train' : clf_auc_train,
                         'train' : len(df_train),
                         'val' : len(df_val),
                         'test' : len(df_test)}
+
+print('baseline_real_clf_auc: ', baseline_real_clf_auc)
 
 baseline_real_clf_auc_df = pd.DataFrame()
 baseline_real_clf_auc_df = baseline_real_clf_auc_df._append(baseline_real_clf_auc, ignore_index = True)

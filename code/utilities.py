@@ -66,14 +66,51 @@ class MultiColumnTargetEncoder:
         output = output.drop(columns=self.columns)
         return output
     
+    def findMatchingValue(self, column_index, search_value):
+        min_difference = float('inf')
+        possible_values = self.column_encoding_to_column_value[self.columns[column_index]].keys()
+        
+        if search_value in possible_values:
+            return search_value
+
+        closest_value = search_value
+
+        for value in possible_values:
+            if abs(value - search_value) < min_difference:
+                min_difference = abs(value - search_value)
+                closest_value = value
+        return closest_value
+
     def inverse_transform(self,X):
         output = X.copy()
         for index, column in enumerate(self.encoded_columns):
             for column_unique_val in output[column].unique():
-                output.loc[output[column] == column_unique_val, self.columns[index]] = self.column_encoding_to_column_value[self.columns[index]][column_unique_val]
+                closest_value = self.findMatchingValue(index, column_unique_val)
+                output.loc[output[column] == column_unique_val, self.columns[index]] = self.column_encoding_to_column_value[self.columns[index]][closest_value]
         output = output.drop(columns=self.encoded_columns)
         return output 
         
+
+def function_test_MultiColumnTargetEncoder():
+    df_original = pd.read_csv('../data/adult/adult.csv')
+    categorical_columns = ['workclass', 'education', 'native-country']
+    target_column = 'income'
+    df_original.loc[df_original[target_column] == "<=50K", target_column] = 0
+    df_original.loc[df_original[target_column] == ">50K", target_column] = 1
+    df_original.replace('?', np.NaN,inplace=True)
+    df_original.dropna(axis=0,how='any',inplace=True)
+    encoder_ = MultiColumnTargetEncoder(categorical_columns, target_column)
+    print(df_original)
+    df_modified = encoder_.transform(df_original)
+    print(df_modified)
+    df_new =  encoder_.inverse_transform(df_modified)
+    print(df_new)
+
+    print(df_new['workclass'] == df_original['workclass'])
+    print(df_new['education'] == df_original['education'])
+    print(df_new['native-country'] == df_original['native-country'])
+
+# function_test_MultiColumnTargetEncoder()
 
 # Function to load different datasets
 def load_data(data_set_name:str):
