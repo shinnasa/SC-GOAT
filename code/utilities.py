@@ -278,7 +278,6 @@ def getparams(method_name):
     elif method_name == 'CTGAN' or method_name == "CopulaGAN":
         params_range = {
         'N_sim': 10000,
-        'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
         'epochs':  epoch,  
@@ -289,14 +288,13 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
-        'd_lr': hp.uniform('d_lr', 2e-5, 1e-2),
-        "g_lr": hp.uniform('g_lr', 2e-5, 1e-2),
+        'd_lr': hp.uniform('d_lr', 5e-5, 1e-2),
+        "g_lr": hp.uniform('g_lr', 5e-5, 1e-2),
         } 
         return params_range
     else:
         params_range = {
         'N_sim': 10000,
-        'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
         'epochs':  epoch,

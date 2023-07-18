@@ -87,14 +87,24 @@ if len(arguments) > 2:
         target = 'Class'
 
     method_name = arguments[2]
-    enbcoding = arguments[3] # either categotical or target
+    encode = eval(arguments[3]) # either categotical or target
     optimization_itr = 350
 else:
     data_set_name = 'adult'
     method_name = 'CTGAN'
     optimization_itr = 350
     target = 'income'
-    encode = True
+    encode = False
+
+
+if encode:
+    m_name = method_name + "_target"
+else:
+    m_name = method_name
+
+
+if os.path.exists("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv"):
+    raise FileExistsError(f"This results already exists. Skipping to the next")
 
 df_original = load_data(data_set_name)
 
@@ -115,10 +125,7 @@ validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
 # Save data
 clf_best_param["test_roc"] = best_test_roc
 
-if encode:
-    m_name = method_name + "_target"
-else:
-    m_name = method_name + "_categorical"
+
 
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
 df_bparam.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv", index=False)
