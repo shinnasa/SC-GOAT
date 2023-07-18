@@ -66,14 +66,51 @@ class MultiColumnTargetEncoder:
         output = output.drop(columns=self.columns)
         return output
     
+    def findMatchingValue(self, column_index, search_value):
+        min_difference = float('inf')
+        possible_values = self.column_encoding_to_column_value[self.columns[column_index]].keys()
+        
+        if search_value in possible_values:
+            return search_value
+
+        closest_value = search_value
+
+        for value in possible_values:
+            if abs(value - search_value) < min_difference:
+                min_difference = abs(value - search_value)
+                closest_value = value
+        return closest_value
+
     def inverse_transform(self,X):
         output = X.copy()
         for index, column in enumerate(self.encoded_columns):
             for column_unique_val in output[column].unique():
-                output.loc[output[column] == column_unique_val, self.columns[index]] = self.column_encoding_to_column_value[self.columns[index]][column_unique_val]
+                closest_value = self.findMatchingValue(index, column_unique_val)
+                output.loc[output[column] == column_unique_val, self.columns[index]] = self.column_encoding_to_column_value[self.columns[index]][closest_value]
         output = output.drop(columns=self.encoded_columns)
         return output 
         
+
+def function_test_MultiColumnTargetEncoder():
+    df_original = pd.read_csv('../data/adult/adult.csv')
+    categorical_columns = ['workclass', 'education', 'native-country']
+    target_column = 'income'
+    df_original.loc[df_original[target_column] == "<=50K", target_column] = 0
+    df_original.loc[df_original[target_column] == ">50K", target_column] = 1
+    df_original.replace('?', np.NaN,inplace=True)
+    df_original.dropna(axis=0,how='any',inplace=True)
+    encoder_ = MultiColumnTargetEncoder(categorical_columns, target_column)
+    print(df_original)
+    df_modified = encoder_.transform(df_original)
+    print(df_modified)
+    df_new =  encoder_.inverse_transform(df_modified)
+    print(df_new)
+
+    print(df_new['workclass'] == df_original['workclass'])
+    print(df_new['education'] == df_original['education'])
+    print(df_new['native-country'] == df_original['native-country'])
+
+# function_test_MultiColumnTargetEncoder()
 
 # Function to load different datasets
 def load_data(data_set_name:str):
@@ -98,6 +135,24 @@ def load_data(data_set_name:str):
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
     return df_original
+
+def get_train_validation_test_data(df, encode, target):
+    df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
+    df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+
+    if encode:
+        categorical_columns = []
+        for column in df.columns:
+            if (column != target) & (df[column].dtype == 'object'):
+                categorical_columns.append(column)
+        encoder = MultiColumnTargetEncoder(categorical_columns, target)
+        df_train = encoder.transform(df_train_original)
+        df_val = encoder.transform_test_data(df_val_original)
+        df_test = encoder.transform_test_data(df_test_original)
+
+        return df_train, df_val, df_test
+    else:
+        return df_train_original, df_val_original, df_test_original
 
 def load_data_original(data_set_name:str, balanced:bool=False):
     adult_data_set_dir = "../data/adult"
@@ -190,7 +245,7 @@ def fit_synth(df, params):
 # Function for downstream loss calculation
 def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
-        'eval_metric': 'auc', 'objective':'binary:logistic'
+        'eval_metric': 'auc', 'objective':'binary:logistic', 'seed': 5
     }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
@@ -217,7 +272,7 @@ def downstream_loss(sampled, df_te, target, classifier = "XGB"):
 
 # Get parameters depending on the synthesizer
 def getparams(method_name):
-    epoch = 30
+    epoch = 150
     if method_name == 'GaussianCopula':
         return {}
     elif method_name == 'CTGAN' or method_name == "CopulaGAN":
