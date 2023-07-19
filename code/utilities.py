@@ -12,6 +12,7 @@ from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 from hyperopt.early_stop import no_progress_loss
 import time
+from sdv.sampling import Condition
 import sys
 # Create class for encoding
 class MultiColumnTargetEncoder:

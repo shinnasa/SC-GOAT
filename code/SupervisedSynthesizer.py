@@ -18,7 +18,7 @@ from utilities import *
 os.chdir('..')
 import sys
 import csv
-
+from sdv.sampling import Condition
 import warnings
 warnings.simplefilter("ignore")
 
@@ -33,7 +33,22 @@ def objective_maximize(params):
     synth.fit(df_train)
 
     N_sim = params["N_sim"]
-    sampled = synth.sample(num_rows = N_sim)
+    if data_set_name == 'unbalanced_credit_card':
+        class1 = Condition(
+            num_rows=round(N_sim*0.00176),
+            column_values={'Class': 1}
+        )
+        class0 = Condition(
+            num_rows= N_sim - round(N_sim*0.00176),
+            column_values={'Class': 0}
+        )
+        sampled = synth.sample_from_conditions(
+            conditions=[class0, class1]
+        )
+        if sampled.shape[0] != N_sim:
+            aaaaaa
+    else:
+        sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
     print(clf_auc)
     if clf_auc > best_test_roc:
@@ -90,10 +105,10 @@ if len(arguments) > 2:
     encode = eval(arguments[3]) # either categotical or target
     optimization_itr = 350
 else:
-    data_set_name = 'adult'
-    method_name = 'CTGAN'
+    data_set_name = 'unbalanced_credit_card'
+    method_name = 'TVAE'
     optimization_itr = 350
-    target = 'income'
+    target = 'Class'
     encode = False
 
 
