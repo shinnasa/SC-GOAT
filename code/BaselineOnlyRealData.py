@@ -79,6 +79,7 @@ def get_train_validation_test_data(df, encode):
     df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
     df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
 
+    # HERE ENCODING HAPPENS FOR BOTH XGBOOST AND SYNTHESIZERS
     if encode:
         df_train = encoder.transform(df_train_original)
 
@@ -88,6 +89,7 @@ def get_train_validation_test_data(df, encode):
 
         return df_train, df_val, df_test
     else:
+         # HERE ENCODING HAPPENS FOR ONLY FOR SYNTHESIZERS
         return df_train_original, df_val_original, df_test_original
 
 df_train, df_val, df_test = get_train_validation_test_data(df, encode)
