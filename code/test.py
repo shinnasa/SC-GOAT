@@ -130,23 +130,28 @@ if len(df) > 50000:
 
 df_train, df_val, df_test = get_train_validation_test_data(df, encode, target)
 
-start_time = time.time()
-best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(max_evals=optimization_itr, method_name=method_name)
-elapsed_time = time.time() - start_time
+np.average(df_train.Class)
+metadata = SingleTableMetadata()
+metadata.detect_from_dataframe(data=df)
+synth = TVAESynthesizer(metadata=metadata, epochs = 5)
+synth.fit(df_test)
 
-# Get validation auc
-validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
+N_sim = 10000
+if data_set_name == 'unbalanced_credit_card':
+    class1 = Condition(
+        num_rows=round(N_sim*0.00176),
+        column_values={'Class': 1}
+    )
+    class0 = Condition(
+        num_rows= N_sim - round(N_sim*0.00176),
+        column_values={'Class': 0}
+    )
+    sampled = synth.sample_from_conditions(
+        conditions=[class0, class1], max_tries_per_batch=500
+    )
+    if sampled.shape[0] != N_sim:
+        aaaaaa
+else:
+    sampled = synth.sample(num_rows = N_sim)
+clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
 
-# Save data
-clf_best_param["test_roc"] = best_test_roc
-
-
-
-df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bparam.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv", index=False)
-best_synth.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + "_synthetic_data_xgboost.csv", index=False)
-clf_auc_history.to_csv("data/history/" + data_set_name + "_tuned_" + m_name + "_history_auc_score_xgboost.csv", index=False)
-
-# Create a DataFrame with a single row and column
-df = pd.DataFrame([validation_auc, elapsed_time], columns=['values'], index = ['valudation_auc', "elapsed_time"])
-df.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + 'validation_auc.csv', index=False)
