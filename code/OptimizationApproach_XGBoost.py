@@ -105,8 +105,8 @@ y_test = df_test[target]
 params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
-        'seed': 123
-        # 'scale_pos_weight' : len(df_train[df_train[target] == 0]) / len(df_train[df_train[target] == 1])
+        'seed': 5,
+        'base_score' :  len(df_train[df_train[target] == 1]) / len(df_train)
 }
 
 
@@ -125,8 +125,6 @@ def downstream_loss(sampled, df_val, target, classifier):
         clf = xgb.train(params_xgb, dtrain, 1000, verbose_eval=False)
 
         clf_probs_train = clf.predict(dtrain)
-        print(min(clf_probs_train))
-        print(max(clf_probs_train))
         clf_auc_train = roc_auc_score(y_samp.values.astype(float), clf_probs_train)
         clf_probs_val = clf.predict(dval)
         clf_auc_val = roc_auc_score(y_val.values.astype(float), clf_probs_val)
@@ -167,19 +165,6 @@ params_range = {
 # %%
 generated_data_size = 10000
 
-# %% [markdown]
-# # This part of the code is temporary just to show that XGBOOST Model works
-
-# %%
-params_xgb = {
-        'eval_metric' : 'auc',
-        'objective' : 'binary:logistic',
-        # 'scale_pos_weight' : len(df_train[df_train[target] == 0]) / len(df_train[df_train[target] == 1])
-}
-
-# %% [markdown]
-# # HERE the temp code ends
-
 # %%
 def objective_maximize_roc(params):
     # Keep track of the best iteration records
@@ -206,6 +191,7 @@ def objective_maximize_roc(params):
     y_temp = [y_gauss, y_ctgan, y_copgan, y_tvae]
     
     # Randomly select the data from each source
+    random.seed = 5
     randomRows = random.sample(list(y_temp[0].index.values), int(alpha[0] * len(y_temp[0].index.values)))
 
     X_new = X_temp[0].loc[randomRows]
