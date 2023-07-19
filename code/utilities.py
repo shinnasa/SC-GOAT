@@ -136,6 +136,24 @@ def load_data(data_set_name:str):
         raise ValueError("Invalid data set name: " + data_set_name)
     return df_original
 
+def get_train_validation_test_data(df, encode, target):
+    df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
+    df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+
+    if encode:
+        categorical_columns = []
+        for column in df.columns:
+            if (column != target) & (df[column].dtype == 'object'):
+                categorical_columns.append(column)
+        encoder = MultiColumnTargetEncoder(categorical_columns, target)
+        df_train = encoder.transform(df_train_original)
+        df_val = encoder.transform_test_data(df_val_original)
+        df_test = encoder.transform_test_data(df_test_original)
+
+        return df_train, df_val, df_test
+    else:
+        return df_train_original, df_val_original, df_test_original
+
 def load_data_original(data_set_name:str, balanced:bool=False):
     adult_data_set_dir = "../data/adult"
     credit_card_data_set_dir = "../data/credit_card"
@@ -227,7 +245,7 @@ def fit_synth(df, params):
 # Function for downstream loss calculation
 def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
-        'eval_metric': 'auc', 'objective':'binary:logistic'
+        'eval_metric': 'auc', 'objective':'binary:logistic', 'seed': 5
     }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
@@ -254,13 +272,12 @@ def downstream_loss(sampled, df_te, target, classifier = "XGB"):
 
 # Get parameters depending on the synthesizer
 def getparams(method_name):
-    epoch = 30
+    epoch = 150
     if method_name == 'GaussianCopula':
         return {}
     elif method_name == 'CTGAN' or method_name == "CopulaGAN":
         params_range = {
         'N_sim': 10000,
-        'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
         'epochs':  epoch,  
@@ -271,14 +288,13 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
-        'd_lr': hp.uniform('d_lr', 2e-5, 1e-2),
-        "g_lr": hp.uniform('g_lr', 2e-5, 1e-2),
+        'd_lr': hp.uniform('d_lr', 5e-5, 1e-2),
+        "g_lr": hp.uniform('g_lr', 5e-5, 1e-2),
         } 
         return params_range
     else:
         params_range = {
         'N_sim': 10000,
-        'target': 'income',
         'loss': 'ROCAUC',
         'method': method_name,
         'epochs':  epoch,
