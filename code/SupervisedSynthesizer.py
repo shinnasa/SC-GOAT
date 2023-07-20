@@ -31,6 +31,8 @@ def objective_maximize(params):
     global best_synth
     global params_range
     N_sim = params["N_sim"]
+    if baseline:
+        params = get_init_params(method_name)
     if data_set_name == 'unbalanced_credit_card':
         df1 = df_train.loc[df_train[target] == 1]
         df0 = df_train.loc[df_train[target] == 0]
@@ -49,6 +51,8 @@ def objective_maximize(params):
         sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
     print(clf_auc)
+    
+    
     if clf_auc > best_test_roc:
         best_test_roc = clf_auc
         best_synth = sampled
@@ -72,7 +76,6 @@ def trainDT(max_evals:int, method_name):
     global best_synth
     global clf_auc_history
     global params_range
-    
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
     best_test_roc = 0
@@ -156,7 +159,7 @@ validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
 
 # Save data
 clf_best_param["test_roc"] = best_test_roc
-aaaaa
+
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
 df_bparam.to_csv("data/output/" + m_name + tuning + method_name + "_clf_best_param_xgboost.csv")
 best_synth.to_csv("data/output/" + m_name + tuning + method_name + "_synthetic_data_xgboost.csv", index = False)
