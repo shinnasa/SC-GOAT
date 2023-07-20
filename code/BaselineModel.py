@@ -9,6 +9,7 @@ from sdv.single_table import CTGANSynthesizer
 from sdv.single_table import TVAESynthesizer
 from sdv.single_table import CopulaGANSynthesizer
 from sdv.metadata import SingleTableMetadata
+from sdv.sampling import Condition
 import xgboost as xgb
 import time
 import utilities
@@ -103,6 +104,9 @@ def get_train_validation_test_data(df, encode):
     else:
         return df_train_original, df_val_original, df_test_original
 
+class_0_ratio = len(df[df[target] == 0]) / len(df)
+class_1_ratio = len(df[df[target] == 1]) / len(df)
+
 df_train, df_val, df_test = get_train_validation_test_data(df, encode)
 
 # print(len(df[df[target] == 0]) /len(df))
@@ -187,6 +191,7 @@ def downstream_loss(sampled, df_val, target, classifier):
     else:
         raise ValueError("Invalid classifier: " + classifier)
 
+ 
 if train:
     # %% [markdown]
     # # Generate Synthetic Data from untuned models
@@ -205,7 +210,23 @@ if train:
     synth = fit_synth(df_train, method, epoch)
     synth.fit(df_train)
     N_sim = 10000
+
     sampled_gaussain_copula = synth.sample(num_rows = N_sim)
+
+    # if data_set_name_temp == 'unbalanced_credit_card':
+    #     class0 = Condition(
+    #         num_rows=round(N_sim * class_0_ratio),
+    #         column_values={'Class': 0}
+    #     )
+    #     class1 = Condition(
+    #         num_rows=round(N_sim * class_1_ratio),
+    #         column_values={'Class': 1}
+    #     )
+    #     sampled_gaussain_copula = synth.sample_from_conditions(
+    #         conditions=[class0, class1]
+    #     )
+
+    #     print('sampled: ', sampled_gaussain_copula)
 
     end_time_GaussianCopula = time.time()
 
@@ -237,6 +258,21 @@ if train:
     synth.fit(df_train)
     N_sim = 10000
     sampled_ct_gan = synth.sample(num_rows = N_sim)
+
+    # if data_set_name_temp == 'unbalanced_credit_card':
+    #     class0 = Condition(
+    #         num_rows=round(N_sim * class_0_ratio),
+    #         column_values={'Class': 0}
+    #     )
+    #     class1 = Condition(
+    #         num_rows=round(N_sim * class_1_ratio),
+    #         column_values={'Class': 1}
+    #     )
+    #     # conditions = pd.DataFrame.from_dict
+    #     sampled_ct_gan = synth.sample_from_conditions(
+    #         conditions=[class1], max_tries_per_batch = 10000, batch_size = 100 * N_sim
+    #     )
+    #     print('sampled: ', sampled_ct_gan)
 
     end_time_CTGAN = time.time()
 

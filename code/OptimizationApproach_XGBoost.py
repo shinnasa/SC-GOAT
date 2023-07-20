@@ -44,6 +44,10 @@ balanced = False
 if len(arguments) > 4:
     balanced = eval(arguments[4])
 
+tuned = False
+if len(arguments) > 5:
+    tuned = eval(arguments[5])
+
 prefix = ''
 if data_set_name == 'credit_card':
     if balanced:
@@ -82,11 +86,15 @@ def get_train_validation_test_data(df, encode):
     df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
 
     if encode:
-        df_train = encoder.transform(df_train_original)
+        # HERE ENCODING HAPPENS FOR ONLY FOR SYNTHESIZERS
+        df_train = df_train_original
+        df_val = df_val_original
+        df_test = df_test_original
 
-        df_val = encoder.transform_test_data(df_val_original)
-
-        df_test = encoder.transform_test_data(df_test_original)
+        # HERE ENCODING HAPPENS FOR BOTH XGBOOST AND SYNTHESIZERS
+        # df_train = encoder.transform(df_train_original)
+        # df_val = encoder.transform_test_data(df_val_original)
+        # df_test = encoder.transform_test_data(df_test_original)
 
         return df_train, df_val, df_test
     else:
@@ -106,7 +114,7 @@ params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
         'seed': 5,
-        'base_score' :  len(df_train[df_train[target] == 1]) / len(df_train)
+        # 'base_score' :  len(df_train[df_train[target] == 1]) / len(df_train)
 }
 
 
@@ -115,6 +123,13 @@ def downstream_loss(sampled, df_val, target, classifier):
     y_samp = sampled[target]
     x_val = df_val.loc[:, sampled.columns != target]
     y_val = df_val[target]
+
+    if (sum(y_samp) / len(y_samp) > 0) & (sum(y_samp) / len(y_samp) < 1):
+        params_xgb['base_score'] =  sum(y_samp) / len(y_samp)
+    else:
+        #HERE ONLY ONE CLASS PRESENTS IN THE DATA
+        return 0, 0, None
+    # params_xgb['base_score'] =  len(sampled[sampled[target] == 1]) / len(sampled)
     if classifier == "XGB":
         for column in x_samp.columns:
             if x_samp[column].dtype == 'object':
@@ -132,11 +147,25 @@ def downstream_loss(sampled, df_val, target, classifier):
     else:
         raise ValueError("Invalid classifier: " + classifier)
 
+sampled_gaussain_copula = None
+sampled_ct_gan = None
+sampled_copula_gan = None
+sampled_tvae = None
+if tuned:
+    sampled_gaussain_copula = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")
+    sampled_ct_gan = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")
+    sampled_copula_gan = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")
+    sampled_tvae = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")
+else:
+    sampled_gaussain_copula = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")
+    sampled_ct_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_ct_gan.csv")
+    sampled_copula_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_copula_gan.csv")
+    sampled_tvae = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_tvae.csv")
 
-sampled_gaussain_copula = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_uuned_gaussain_copula.csv")
-sampled_ct_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_tuned_ct_gan.csv")
-sampled_copula_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_tuned_copula_gan.csv")
-sampled_tvae = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_tuned_tvae.csv")
+print(len(sampled_gaussain_copula[sampled_gaussain_copula[target] == 0]) /len(sampled_gaussain_copula))
+print(len(sampled_ct_gan[sampled_ct_gan[target] == 0]) /len(sampled_ct_gan))
+print(len(sampled_copula_gan[sampled_copula_gan[target] == 0]) /len(sampled_copula_gan))
+print(len(sampled_tvae[sampled_tvae[target] == 0]) /len(sampled_tvae))
 
 
 # %%
@@ -286,33 +315,40 @@ best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, clf_be
 
 
 # %%
-def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced:bool=False):
+def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced, encode, tuned):
     synthetic_data = best_X_synthetic
+    prefix = ''
+    if data_set_name == 'credit_card':
+        if balanced:
+            prefix = 'balanced_'
+        else:
+            prefix = 'unbalanced_'
+    str_tuned ='_untuned'
+    if tuned:
+        str_tuned = '_tuned'
+    if encode:
+        prefix =  "encoded_" + prefix 
     if data_set_name == 'adult':
         target = 'income'
         synthetic_data[target] = best_y_synthetic
         synthetic_data.loc[synthetic_data[target] == True, target] = " <=50K"
         synthetic_data.loc[synthetic_data[target] == False, target] = " >50K"
-        synthetic_data.to_csv("../data/output/" + data_set_name + "_tuned_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     elif data_set_name == 'credit_card':
         target = 'Class'
         synthetic_data[target] = best_y_synthetic
-        prefix = 'unbalanced_'
-        if balanced:
-            prefix = 'balanced_'
-        if balanced:
-            synthetic_data.to_csv("../data/output/"+ prefix + data_set_name + "_tuned_models_synthetic_data_xgboost.csv", index=False)
-        else:
-            synthetic_data.to_csv("../data/output/" + prefix + data_set_name + "_tuned_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
     return synthetic_data
 
-if encode:
-    best_X_synthetic = encoder.inverse_transform(best_X_synthetic)
+# HERE ENCODING HAPPENS FOR BOTH XGBOOST AND SYNTHESIZERS
+# if encode:
+#     best_X_synthetic = encoder.inverse_transform(best_X_synthetic)
 
 # %%
-save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced)
+save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced, encode, tuned)
+
 
 #Compute test ROC
 for column in x_test.columns:
@@ -329,8 +365,79 @@ clf_best_param["total_time_BO"] = total_time_BO
 
 print('clf_best_param: ', clf_best_param)
 
+str_tuned ='_untuned'
+if tuned:
+    str_tuned = '_tuned'
+
 clf_best_param_df = pd.DataFrame()
 clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
-clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + "_tuned_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_clf_best_param_xgboost.csv", index=False)
 
-params_history.to_csv("../data/history/" + prefix + data_set_name + "_tuned_models_params_alpha_history.csv", index=False)
+params_history.to_csv("../data/history/" + prefix + data_set_name + str_tuned + "_models_params_alpha_history.csv", index=False)
+
+
+start_time_GaussianCopula = time.time()
+clf_auc_train_gaussain_copula, clf_auc_val_gaussain_copula, clf_gaussain_copula = downstream_loss(sampled_gaussain_copula, df_val, target, 'XGB')
+end_time_GaussianCopula = time.time()
+start_time_CTGAN = time.time()
+clf_auc_train_ct_gan, clf_auc_val_ct_gan, clf_ct_gan= downstream_loss(sampled_ct_gan, df_val, target, 'XGB')
+end_time_CTGAN = time.time()
+start_time_CopulaGAN = time.time()
+clf_auc_train_copula_gan, clf_auc_val_copula_gan, clf_copula_gan = downstream_loss(sampled_copula_gan, df_val, target, 'XGB')
+end_time_CopulaGAN = time.time()
+start_time_TVAE = time.time()
+clf_auc_train_tvae, clf_auc_val_tvae, clf_tvae = downstream_loss(sampled_tvae, df_val, target, 'XGB')
+end_time_TVAE = time.time()
+
+for column in x_test.columns:
+    if x_test[column].dtype == 'object':
+        x_test[column] = x_test[column].astype('category')
+dtest = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
+
+clf_auc_test_gaussain_copula = 0
+if clf_gaussain_copula != None:
+    clf_probs_test_gaussain_copula = clf_gaussain_copula.predict(dtest)
+    clf_auc_test_gaussain_copula = roc_auc_score(y_test.astype(float), clf_probs_test_gaussain_copula)
+
+clf_auc_test_ct_gan = 0
+if clf_ct_gan != None:
+    clf_probs_test_ct_gan = clf_ct_gan.predict(dtest)
+    clf_auc_test_ct_gan = roc_auc_score(y_test.astype(float), clf_probs_test_ct_gan)
+
+clf_auc_test_copula_gan = 0
+if clf_copula_gan != None:
+    clf_probs_test_copula_gan = clf_copula_gan.predict(dtest)
+    clf_auc_test_copula_gan = roc_auc_score(y_test.astype(float), clf_probs_test_copula_gan)
+
+clf_auc_test_tvae = 0
+if clf_tvae != None:
+    clf_probs_test_tvae = clf_tvae.predict(dtest)
+    clf_auc_test_tvae = roc_auc_score(y_test.astype(float), clf_probs_test_tvae)
+
+individual_clf_auc = {'clf_auc_train_gaussain_copula' : clf_auc_train_gaussain_copula,
+                    'clf_auc_val_gaussain_copula' : clf_auc_val_gaussain_copula,
+                    'clf_auc_test_gaussain_copula' : clf_auc_test_gaussain_copula,
+                    'clf_auc_train_ct_gan' : clf_auc_train_ct_gan,
+                    'clf_auc_val_ct_gan' : clf_auc_val_ct_gan,
+                    'clf_auc_test_ct_gan' : clf_auc_test_ct_gan, 
+                    'clf_auc_train_copula_gan' : clf_auc_train_copula_gan,
+                    'clf_auc_val_copula_gan' : clf_auc_val_copula_gan,
+                    'clf_auc_test_copula_gan' : clf_auc_test_copula_gan,
+                    'clf_auc_train_tvae' : clf_auc_train_tvae,
+                    'clf_auc_val_tvae' : clf_auc_val_tvae,
+                    'clf_auc_test_tvae' : clf_auc_test_tvae,
+                    'train' : len(sampled_tvae),
+                    'val' : len(df_val),
+                    'test' : len(df_test)}
+
+individual_clf_auc["total_time_GaussianCopula"] = end_time_GaussianCopula - start_time_GaussianCopula
+individual_clf_auc["total_time_CTGAN"] = end_time_CTGAN - start_time_CTGAN
+individual_clf_auc["total_time_CopulaGAN"] = end_time_CopulaGAN - start_time_CopulaGAN
+individual_clf_auc["total_time_TVAE"] = end_time_TVAE - start_time_TVAE
+
+print('individual_clf_auc: ', individual_clf_auc)
+
+individual_clf_auc_df = pd.DataFrame()
+individual_clf_auc_df = individual_clf_auc_df._append(individual_clf_auc, ignore_index = True)
+
+individual_clf_auc_df.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_clf_auc_score_and_time_per_each_individual_model.csv", index=False)
