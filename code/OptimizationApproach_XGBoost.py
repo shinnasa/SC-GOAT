@@ -48,9 +48,12 @@ tuned = False
 if len(arguments) > 5:
     tuned = eval(arguments[5])
 
+augment_data_percentage = 0
 augment_data = False
 if len(arguments) > 6:
-    augment_data = eval(arguments[6])
+    augment_data = True
+    augment_data_percentage = float(arguments[6])
+    assert 0 <= augment_data_percentage <= 1
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -69,6 +72,7 @@ print('encode: ', encode)
 print('balanced: ', balanced)
 print('tuned: ', tuned)
 print('augment_data: ', augment_data)
+print('augment_data_percentage: ', augment_data_percentage)
 print('prefix: ', prefix)
 
 df_original = utilities.load_data_original(data_set_name, balanced)
@@ -199,14 +203,15 @@ y_tvae = sampled_tvae[target]
 
 # %%
 
-def getParams(augment_data:bool):
-    if augment_data:
+def getParams(augment_data_percentage:float):
+    print('----augment_data_percentage: ', augment_data_percentage)
+    if augment_data_percentage > 0:
         params_range = {
             'alpha_1':  hp.uniform('alpha_1', 0, 1),
             'alpha_2':  hp.uniform('alpha_2', 0, 1),
             'alpha_3':  hp.uniform('alpha_3', 0, 1),
             'alpha_4':  hp.uniform('alpha_4', 0, 1),
-            'alpha_5':  hp.uniform('alpha_5', 0, 1),
+            'alpha_5':  augment_data_percentage,
             'generated_data_size': 10000
            } 
         return params_range
@@ -329,14 +334,16 @@ def trainDT(max_evals:int):
     best_params = []
     trials = Trials()
     start_time_BO = time.time()
-    params_range = getParams(augment_data)
+    params_range = getParams(augment_data_percentage)
+    print('getParams: ', getParams(augment_data_percentage))
     clf_best_param = fmin(fn=objective_maximize_roc,
                     space=params_range,
                     max_evals=max_evals,
                 # rstate=np.random.default_rng(42),
                     algo=tpe.suggest,
                     trials=trials)
-    print(clf_best_param)
+    print('best_params: ', best_params)
+    print('clf_best_param: ', clf_best_param)
     end_time_BO = time.time()
     total_time_BO = end_time_BO - start_time_BO
     return best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, output, total_time_BO, best_classifier_model
@@ -347,7 +354,7 @@ best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, clf_be
 
 
 # %%
-def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data):
+def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data_percentage):
     synthetic_data = best_X_synthetic
     prefix = ''
     if data_set_name == 'credit_card':
@@ -360,8 +367,8 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
         str_tuned = '_tuned'
     if encode:
         prefix =  "encoded_" + prefix 
-    if augment_data:
-        prefix = 'augmented_' + prefix
+    if augment_data_percentage > 0:
+        prefix = 'augmented_' + str(augment_data_percentage) + "_" + prefix
     if data_set_name == 'adult':
         target = 'income'
         synthetic_data[target] = best_y_synthetic
@@ -381,7 +388,7 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
 #     best_X_synthetic = encoder.inverse_transform(best_X_synthetic)[initial_columns_ordering]
 
 # %%
-save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data)
+save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data_percentage)
 
 
 #Compute test ROC
@@ -403,8 +410,8 @@ str_tuned ='_untuned'
 if tuned:
     str_tuned = '_tuned'
 
-if augment_data:
-    prefix = 'augmented_' + prefix
+if augment_data_percentage > 0:
+    prefix = 'augmented_' + str(augment_data_percentage) + "_" + prefix
 
 clf_best_param_df = pd.DataFrame()
 clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)

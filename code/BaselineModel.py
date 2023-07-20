@@ -211,23 +211,24 @@ if train:
     synth.fit(df_train)
     N_sim = 10000
 
-    sampled_gaussain_copula = synth.sample(num_rows = N_sim)
+    sampled_gaussain_copula = None
 
-    # if data_set_name_temp == 'unbalanced_credit_card':
-    #     class0 = Condition(
-    #         num_rows=round(N_sim * class_0_ratio),
-    #         column_values={'Class': 0}
-    #     )
-    #     class1 = Condition(
-    #         num_rows=round(N_sim * class_1_ratio),
-    #         column_values={'Class': 1}
-    #     )
-    #     sampled_gaussain_copula = synth.sample_from_conditions(
-    #         conditions=[class0, class1]
-    #     )
+    if data_set_name_temp == 'unbalanced_credit_card':
+        class0 = Condition(
+            num_rows=round(N_sim * class_0_ratio),
+            column_values={'Class': 0}
+        )
+        class1 = Condition(
+            num_rows=round(N_sim * class_1_ratio),
+            column_values={'Class': 1}
+        )
+        sampled_gaussain_copula = synth.sample_from_conditions(
+            conditions=[class0, class1]
+        )
+    else:
+        sampled_gaussain_copula = synth.sample(num_rows = N_sim)
 
-    #     print('sampled: ', sampled_gaussain_copula)
-
+    print('sampled: ', sampled_gaussain_copula)
     end_time_GaussianCopula = time.time()
 
     # HERE ENCODING HAPPENS FOR ONLY FOR SYNTHESIZERS
