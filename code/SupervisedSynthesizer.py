@@ -10,6 +10,7 @@ from sdv.single_table import CopulaGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sklearn.tree import DecisionTreeClassifier
 from hyperopt.early_stop import no_progress_loss
+from hyperopt.fmin import generate_trials_to_calculate
 import xgboost as xgb
 import time
 import os
@@ -29,8 +30,6 @@ def objective_maximize(params):
     global best_test_roc 
     global best_synth
     global params_range
-    
-
     N_sim = params["N_sim"]
     if data_set_name == 'unbalanced_credit_card':
         df1 = df_train.loc[df_train[target] == 1]
@@ -73,10 +72,12 @@ def trainDT(max_evals:int, method_name):
     global best_synth
     global clf_auc_history
     global params_range
+    
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
     best_test_roc = 0
-    trials = Trials()
+    init_vals = [get_init_params(method_name)]
+    trials = generate_trials_to_calculate(init_vals)
     start = time.time()
     clf_best_param = fmin(fn=objective_maximize,
                     space=params_range,
@@ -102,13 +103,18 @@ if len(arguments) > 2:
 
     method_name = arguments[2]
     encode = eval(arguments[3]) # either categotical or target
-    optimization_itr = 350
+    baseline = eval(arguments[4])
+    if baseline:
+        optimization_itr = 1
+    else:
+        optimization_itr = 350
 else:
     data_set_name = 'adult'
     method_name = 'TVAE'
     optimization_itr = 1
     target = 'income'
     encode = True
+    baseline = True
 
 
 if encode:
@@ -116,8 +122,13 @@ if encode:
 else:
     m_name = data_set_name
 
+if baseline:
+    tuning = "_untuned_"
+else:
+    tuning = "_tuned_"
 
-if os.path.exists("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv"):
+
+if os.path.exists("data/output/" + m_name + tuning + method_name + "_clf_best_param_xgboost.csv"):
     raise FileExistsError(f"This results already exists. Skipping to the next")
 
 df_original = load_data(data_set_name)
@@ -145,12 +156,12 @@ validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
 
 # Save data
 clf_best_param["test_roc"] = best_test_roc
-
+aaaaa
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bparam.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv")
-best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
-clf_auc_history.to_csv("data/history/" + m_name + "_tuned_" + method_name + "_history_auc_score_xgboost.csv")
+df_bparam.to_csv("data/output/" + m_name + tuning + method_name + "_clf_best_param_xgboost.csv")
+best_synth.to_csv("data/output/" + m_name + tuning + method_name + "_synthetic_data_xgboost.csv", index = False)
+clf_auc_history.to_csv("data/history/" + m_name + tuning + method_name + "_history_auc_score_xgboost.csv")
 
 # Create a DataFrame with a single row and column
 dfres = pd.DataFrame([validation_auc, elapsed_time], columns=['values'], index = ['valudation_auc', "elapsed_time"])
-dfres.to_csv("data/output/" + m_name + "_tuned_" + method_name + '_validation_auc.csv')
+dfres.to_csv("data/output/" + m_name + tuning + method_name + '_validation_auc.csv')
