@@ -64,7 +64,7 @@ print('prefix: ', prefix)
 
 data_set_name_temp = prefix + data_set_name
 
-train = False
+train = True
 
 df_original = utilities.load_data_original(data_set_name, balanced)
 
