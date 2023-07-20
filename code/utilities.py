@@ -151,9 +151,9 @@ def get_train_validation_test_data(df, encode, target):
         df_val = encoder.transform_test_data(df_val_original)
         df_test = encoder.transform_test_data(df_test_original)
 
-        return df_train, df_val, df_test
+        return df_train, df_val, df_test, encoder
     else:
-        return df_train_original, df_val_original, df_test_original
+        return df_train_original, df_val_original, df_test_original, None
 
 def load_data_original(data_set_name:str, balanced:bool=False):
     adult_data_set_dir = "../data/adult"

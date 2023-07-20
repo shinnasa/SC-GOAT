@@ -104,17 +104,17 @@ if len(arguments) > 2:
     encode = eval(arguments[3]) # either categotical or target
     optimization_itr = 350
 else:
-    data_set_name = 'unbalanced_credit_card'
+    data_set_name = 'adult'
     method_name = 'TVAE'
-    optimization_itr = 350
-    target = 'Class'
-    encode = False
+    optimization_itr = 1
+    target = 'income'
+    encode = True
 
 
 if encode:
-    m_name = method_name + "_target"
+    m_name = "encoded_" + data_set_name
 else:
-    m_name = method_name
+    m_name = data_set_name
 
 
 if os.path.exists("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv"):
@@ -126,12 +126,19 @@ df = df_original.copy()
 if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
 
-
-df_train, df_val, df_test = get_train_validation_test_data(df, encode, target)
+df_train, df_val, df_test, encoder = get_train_validation_test_data(df, encode, target)
 
 start_time = time.time()
 best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(max_evals=optimization_itr, method_name=method_name)
 elapsed_time = time.time() - start_time
+
+# Inverse transform if it was 
+if encode:
+    best_synth = encoder.inverse_transform(best_synth)
+    best_synth = best_synth[df.columns]
+    print('df_val: ', df_val[target].unique())
+    df_val = encoder.inverse_transform(df_val)
+    df_val = df_val[df.columns]
 
 # Get validation auc
 validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
@@ -139,13 +146,11 @@ validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
 # Save data
 clf_best_param["test_roc"] = best_test_roc
 
-
-
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bparam.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + "_clf_best_param_xgboost.csv", index=False)
-best_synth.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + "_synthetic_data_xgboost.csv", index=False)
-clf_auc_history.to_csv("data/history/" + data_set_name + "_tuned_" + m_name + "_history_auc_score_xgboost.csv", index=False)
+df_bparam.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_clf_best_param_xgboost.csv")
+best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
+clf_auc_history.to_csv("data/history/" + m_name + "_tuned_" + method_name + "_history_auc_score_xgboost.csv")
 
 # Create a DataFrame with a single row and column
-df = pd.DataFrame([validation_auc, elapsed_time], columns=['values'], index = ['valudation_auc', "elapsed_time"])
-df.to_csv("data/output/" + data_set_name + "_tuned_" + m_name + 'validation_auc.csv', index=False)
+dfres = pd.DataFrame([validation_auc, elapsed_time], columns=['values'], index = ['valudation_auc', "elapsed_time"])
+dfres.to_csv("data/output/" + m_name + "_tuned_" + method_name + '_validation_auc.csv')
