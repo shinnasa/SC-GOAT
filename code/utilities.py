@@ -246,7 +246,8 @@ def fit_synth(df, params):
 # Function for downstream loss calculation
 def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
-        'eval_metric': 'auc', 'objective':'binary:logistic', 'seed': 5
+        'eval_metric': 'auc', 'objective':'binary:logistic', 'seed': 5,
+        'base_score' : len(sampled[sampled[target] == 1]) / len(sampled),
     }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
@@ -276,7 +277,7 @@ def getparams(method_name):
     epoch = 150
     if method_name == 'GaussianCopula':
         return {}
-    elif method_name == 'CTGAN' or method_name == "CopulaGAN":
+    elif method_name == 'CTGAN':
         params_range = {
         'N_sim': 10000,
         'loss': 'ROCAUC',
@@ -284,13 +285,30 @@ def getparams(method_name):
         'epochs':  epoch,  
         'batch_size':  hp.randint('batch_size',1, 5), # multiple of 100
         'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
-        'g_dim2':  hp.randint('g_dim2',1, 3), # multiple of 128
-        'g_dim3':  hp.randint('g_dim3',0, 3), # multiple of 128
+        'g_dim2':  hp.randint('g_dim2',1, 2), # multiple of 128
+        'g_dim3':  hp.randint('g_dim3',0, 1), # multiple of 128
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
-        'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 128
-        'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 128
+        'd_dim2':  hp.randint('d_dim2',1, 2), # multiple of 128
+        'd_dim3':  hp.randint('d_dim3',0, 1), # multiple of 128
         'd_lr': hp.uniform('d_lr', 5e-5, 1e-2),
         "g_lr": hp.uniform('g_lr', 5e-5, 1e-2),
+        } 
+        return params_range
+    elif method_name == "CopulaGAN":
+        params_range = {
+        'N_sim': 10000,
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  epoch,  
+        'batch_size':  5, #hp.randint('batch_size',1, 5), # multiple of 100
+        'g_dim1':  hp.randint('g_dim1',1, 3), # multiple of 128
+        'g_dim2':  hp.randint('g_dim2',1, 2), # multiple of 128
+        'g_dim3':  hp.randint('g_dim3',0, 1), # multiple of 128
+        'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
+        'd_dim2':  hp.randint('d_dim2',1, 2), # multiple of 128
+        'd_dim3':  hp.randint('d_dim3',0, 1), # multiple of 128
+        'd_lr': 2e-4,
+        "g_lr": 2e-4,
         } 
         return params_range
     else:
@@ -301,10 +319,65 @@ def getparams(method_name):
         'epochs':  epoch,
         'batch_size':  5, #hp.randint('batch_size',1, 5), # multiple of 100
         'c_dim1':  hp.randint('c_dim1',1, 3), # multiple of 64
-        'c_dim2':  hp.randint('c_dim2',1, 3), # multiple of 64
-        'c_dim3':  hp.randint('c_dim3',0, 3), # multiple of 64
+        'c_dim2':  hp.randint('c_dim2',1, 2), # multiple of 64
+        'c_dim3':  hp.randint('c_dim3',0, 1), # multiple of 64
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 64
-        'd_dim2':  hp.randint('d_dim2',1, 3), # multiple of 64
-        'd_dim3':  hp.randint('d_dim3',0, 3), # multiple of 64
+        'd_dim2':  hp.randint('d_dim2',1, 2), # multiple of 64
+        'd_dim3':  hp.randint('d_dim3',0, 1), # multiple of 64
+        } 
+        return params_range
+
+# Get inirial params
+def get_init_params(method_name):
+    epoch = 150
+    if method_name == 'GaussianCopula':
+        return {}
+    elif method_name == 'CTGAN':
+        params_range = {
+        'N_sim': 10000,
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  epoch,  
+        'batch_size':  5,
+        'g_dim1':  2,
+        'g_dim2':  2,
+        'g_dim3':  0,
+        'd_dim1':  2,
+        'd_dim2':  2,
+        'd_dim3':  0,
+        'd_lr': 2e-4,
+        "g_lr": 2e-4,
+        } 
+        return params_range
+    elif method_name == "CopulaGAN":
+        params_range = {
+        'N_sim': 10000,
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  epoch,  
+        'batch_size':  5, #hp.randint('batch_size',1, 5), # multiple of 100
+        'g_dim1':  2,
+        'g_dim2':  2,
+        'g_dim3':  0,
+        'd_dim1':  2,
+        'd_dim2':  2,
+        'd_dim3':  0,
+        'd_lr': 2e-4,
+        "g_lr": 2e-4,
+        } 
+        return params_range
+    else:
+        params_range = {
+        'N_sim': 10000,
+        'loss': 'ROCAUC',
+        'method': method_name,
+        'epochs':  epoch,
+        'batch_size':  5, #hp.randint('batch_size',1, 5), # multiple of 100
+        'c_dim1':  2,
+        'c_dim2':  2,
+        'c_dim3':  0,
+        'd_dim1':  2,
+        'd_dim2':  2,
+        'd_dim3':  0,
         } 
         return params_range

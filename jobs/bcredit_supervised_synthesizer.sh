@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --partition gpu
 #SBATCH --time 24:00:00
-#SBATCH --cpus-per-task 8
+#SBATCH --cpus-per-task 12
 #SBATCH --gpus 1
 #SBATCH --mem-per-cpu 3G
 #SBATCH --mail-user=s.nakamura.sakai@yale.edu
@@ -10,8 +10,8 @@
 module load miniconda
 conda activate sdv
 
-python code/SupervisedSynthesizer.py balanced_credit_card CTGAN False
-python code/SupervisedSynthesizer.py balanced_credit_card TVAE False
-python code/SupervisedSynthesizer.py balanced_credit_card CopulaGAN False
+python code/SupervisedSynthesizer.py balanced_credit_card CTGAN False False
+python code/SupervisedSynthesizer.py balanced_credit_card TVAE False False
+python code/SupervisedSynthesizer.py balanced_credit_card CopulaGAN False False
 
 echo "Done"
