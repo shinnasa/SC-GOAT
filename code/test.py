@@ -34,20 +34,20 @@ def objective_maximize(params):
 
     N_sim = params["N_sim"]
     if data_set_name == 'unbalanced_credit_card':
-        class1 = Condition(
-            num_rows=round(N_sim*0.00176),
-            column_values={'Class': 1}
-        )
-        class0 = Condition(
-            num_rows= N_sim - round(N_sim*0.00176),
-            column_values={'Class': 0}
-        )
-        sampled = synth.sample_from_conditions(
-            conditions=[class0, class1]
-        )
-        if sampled.shape[0] != N_sim:
-            aaaaaa
+        df1 = df_train.loc[df_train[target] == 1]
+        df0 = df_train.loc[df_train[target] == 0]
+        synth1 = fit_synth(df1, params)
+        synth1.fit(df1)
+        synth0 = fit_synth(df0, params)
+        synth0.fit(df0)
+        
+        num_rows1 = round(N_sim*0.00176),
+        sampled1 = synth1.sample(num_rows = num_rows1)
+        sampled1 = synth0.sample(num_rows = num_rows0)
+
     else:
+        synth = fit_synth(df_train, params)
+        synth.fit(df_train)
         sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
     print(clf_auc)
@@ -133,25 +133,22 @@ df_train, df_val, df_test = get_train_validation_test_data(df, encode, target)
 np.average(df_train.Class)
 metadata = SingleTableMetadata()
 metadata.detect_from_dataframe(data=df)
-synth = TVAESynthesizer(metadata=metadata, epochs = 5)
-synth.fit(df_test)
-
+synth1 = TVAESynthesizer(metadata=metadata, epochs = 3)
+synth0 = TVAESynthesizer(metadata=metadata, epochs = 3)
 N_sim = 10000
 if data_set_name == 'unbalanced_credit_card':
-    class1 = Condition(
-        num_rows=round(N_sim*0.00176),
-        column_values={'Class': 1}
-    )
-    class0 = Condition(
-        num_rows= N_sim - round(N_sim*0.00176),
-        column_values={'Class': 0}
-    )
-    sampled = synth.sample_from_conditions(
-        conditions=[class0, class1], max_tries_per_batch=500
-    )
-    if sampled.shape[0] != N_sim:
-        aaaaaa
-else:
-    sampled = synth.sample(num_rows = N_sim)
-clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
+    df1 = df_train.loc[df_train[target] == 1]
+    df0 = df_train.loc[df_train[target] == 0]
+    synth1.fit(df1)
+    synth0.fit(df0)
+    
+    num_rows1 = round(N_sim*0.00176)
+    sampled1 = synth1.sample(num_rows = num_rows1)
+    sampled0 = synth0.sample(num_rows = N_sim - num_rows1)
+    sampled = pd.concat([sampled1, sampled0], ignore_index=True)
 
+else:
+    synth = fit_synth(df_train, params)
+    synth.fit(df_train)
+    sampled = synth.sample(num_rows = N_sim)
+validation_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
