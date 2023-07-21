@@ -1,0 +1,15 @@
+,Value
+N_sim,10000
+loss,ROCAUC
+method,CopulaGAN
+epochs,150
+batch_size,5
+g_dim1,2
+g_dim2,2
+g_dim3,0
+d_dim1,2
+d_dim2,2
+d_dim3,0
+d_lr,0.0002
+g_lr,0.0002
+test_roc,0.9963977955911822

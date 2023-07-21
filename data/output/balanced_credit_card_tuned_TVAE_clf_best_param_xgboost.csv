@@ -1,0 +1,13 @@
+,Value
+N_sim,10000
+loss,ROCAUC
+method,TVAE
+epochs,150
+batch_size,5
+c_dim1,2
+c_dim2,2
+c_dim3,0
+d_dim1,2
+d_dim2,2
+d_dim3,0
+test_roc,0.9844777635349631
