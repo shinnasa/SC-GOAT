@@ -87,7 +87,7 @@ print('initial_columns_ordering: ', initial_columns_ordering)
 
 def get_train_validation_test_data(df, encode):
     df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
-    df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+    df_val_original, df_test_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
 
     if encode:
         df_train = encoder.transform(df_train_original)

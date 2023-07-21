@@ -94,7 +94,7 @@ encoder = utilities.MultiColumnTargetEncoder(categorical_columns, target)
 
 def get_train_validation_test_data(df, encode):
     df_train_original, df_test_original = train_test_split(df, test_size = 0.3,  random_state = 5) #70% is training and 30 to test
-    df_test_original, df_val_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
+    df_val_original, df_test_original = train_test_split(df_test_original, test_size = 1 - 0.666,  random_state = 5)# out of 30, 20 is test and 10 for validation
 
     if encode:
         # HERE ENCODING HAPPENS FOR ONLY FOR SYNTHESIZERS
@@ -113,8 +113,8 @@ def get_train_validation_test_data(df, encode):
 
 # df_train, df_val, df_test = get_train_validation_test_data(df, encode)
 df_train = pd.read_csv("data/input/" + prefix + data_set_name + "_train.csv", index_col=0)
-df_test = pd.read_csv("data/input/" + prefix + data_set_name + "_test.csv", index_col=0)
-df_val = pd.read_csv("data/input/" + prefix + data_set_name + "_validation.csv", index_col=0)
+df_val = pd.read_csv("data/input/" + prefix + data_set_name + "_test.csv", index_col=0)
+df_test = pd.read_csv("data/input/" + prefix + data_set_name + "_validation.csv", index_col=0)
 df_real = df_train.sample(10000, replace = False, random_state = 5)
 
 if encode:
