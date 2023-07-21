@@ -9,6 +9,10 @@
 
 module load miniconda
 conda activate sdv
+# dataset method encode baseline
+python code/SupervisedSynthesizer.py adult CTGAN True True
+python code/SupervisedSynthesizer.py adult TVAE True True
+python code/SupervisedSynthesizer.py adult CopulaGAN True True
 
 python code/SupervisedSynthesizer.py adult CTGAN False True
 python code/SupervisedSynthesizer.py adult TVAE False True

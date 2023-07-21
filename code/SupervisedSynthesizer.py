@@ -76,6 +76,19 @@ def trainDT(max_evals:int, method_name):
     global best_synth
     global clf_auc_history
     global params_range
+    if method_name == "GaussianCopula":
+        params = get_init_params(method_name)
+        N_sim = params["N_sim"]
+        synth = fit_synth(df_train, params = params)
+        synth.fit(df_train)
+        if data_set_name == "unbalanced_credit_card":
+            class1 = Condition(num_rows = round(N_sim*df[target].mean()), column_values={target: 1})
+            class0 = Condition(num_rows = N_sim - round(N_sim*df[target].mean()), column_values={target: 0})
+            best_synth = synth.sample_from_conditions(conditions=[class1,  class0])
+        else:
+            best_synth = synth.sample(num_rows = N_sim)
+        best_test_roc = downstream_loss(best_synth, df_test, target, classifier = "XGB")
+        return best_test_roc, best_synth, {}, pd.DataFrame.from_dict({})
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
     best_test_roc = 0
@@ -112,11 +125,14 @@ if len(arguments) > 2:
     else:
         optimization_itr = 350
 else:
-    data_set_name = 'adult'
-    method_name = 'TVAE'
+    data_set_name = 'unbalanced_credit_card'
+    method_name = 'GaussianCopula'
     optimization_itr = 1
-    target = 'income'
-    encode = True
+    if data_set_name == 'adult':
+        target = 'income'
+    else:
+        target = "Class"
+    encode = False
     baseline = True
 
 
@@ -141,6 +157,16 @@ if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
 
 df_train, df_val, df_test, encoder = get_train_validation_test_data(df, encode, target)
+if encode:
+    df_train = encoder.inverse_transform(df_train)
+    df_train = df_train[df.columns]
+    df_test = encoder.inverse_transform(df_test)
+    df_test = df_test[df.columns]
+    df_val = encoder.inverse_transform(df_val)
+    df_val = df_val[df.columns]
+df_train.to_csv('data/input/' + m_name + '_train.csv')
+df_test.to_csv('data/input/' + m_name + '_test.csv')
+df_val.to_csv('data/input/' + m_name  + '_validation.csv')
 
 start_time = time.time()
 best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(max_evals=optimization_itr, method_name=method_name)

@@ -156,8 +156,8 @@ def get_train_validation_test_data(df, encode, target):
         return df_train_original, df_val_original, df_test_original, None
 
 def load_data_original(data_set_name:str, balanced:bool=False):
-    adult_data_set_dir = "../data/adult"
-    credit_card_data_set_dir = "../data/credit_card"
+    adult_data_set_dir = "data/adult"
+    credit_card_data_set_dir = "data/credit_card"
     adult_data_set_csv_file_name = 'adult'
     balaned_credit_card_data_set_csv_file_name = 'credit_card_balanced'
     unbalaned_credit_card_data_set_csv_file_name = 'credit_card_unbalanced'
@@ -204,7 +204,7 @@ def fit_synth(df, params):
     method = params['method']
     print(params, method)
     if method == "GaussianCopula":
-        synth = GaussianCopulaSynthesizer(metadata=metadata, verbose=True)
+        synth = GaussianCopulaSynthesizer(metadata=metadata)
     elif method == "CTGAN" or method =="CopulaGAN":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
@@ -331,9 +331,13 @@ def getparams(method_name):
 def get_init_params(method_name):
     epoch = 150
     if method_name == 'GaussianCopula':
-        return {}
+        params = {
+        'N_sim': 10000,
+        'method': method_name
+        } 
+        return params
     elif method_name == 'CTGAN':
-        params_range = {
+        params = {
         'N_sim': 10000,
         'loss': 'ROCAUC',
         'method': method_name,
@@ -348,9 +352,9 @@ def get_init_params(method_name):
         'd_lr': 2e-4,
         "g_lr": 2e-4,
         } 
-        return params_range
+        return params
     elif method_name == "CopulaGAN":
-        params_range = {
+        params = {
         'N_sim': 10000,
         'loss': 'ROCAUC',
         'method': method_name,
@@ -365,9 +369,9 @@ def get_init_params(method_name):
         'd_lr': 2e-4,
         "g_lr": 2e-4,
         } 
-        return params_range
+        return params
     else:
-        params_range = {
+        params = {
         'N_sim': 10000,
         'loss': 'ROCAUC',
         'method': method_name,
@@ -380,4 +384,4 @@ def get_init_params(method_name):
         'd_dim2':  2,
         'd_dim3':  0,
         } 
-        return params_range
+        return params

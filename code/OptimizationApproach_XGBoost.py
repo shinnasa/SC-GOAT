@@ -1,4 +1,3 @@
-# %%
 import pandas as pd
 import numpy as np
 from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
@@ -19,41 +18,43 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# %% [markdown]
-# # Load data
-# Load data and create train test split from the smaller dataset that contains 10% of the full data
-
-# %%
 arguments = sys.argv
 print('arguments: ', arguments)
-assert len(arguments) > 3
 print(os.getcwd())
-data_set_name = arguments[1]
+
+if len(arguments) > 2:
+    encode = False
+    data_set_name = arguments[1]
+    
+    optimization_itr = int(arguments[2])
+    encode = eval(arguments[3])
+
+    balanced = False
+    if len(arguments) > 4:
+        balanced = eval(arguments[4])
+
+    tuned = False
+    if len(arguments) > 5:
+        tuned = eval(arguments[5])
+
+    augment_data_percentage = 0
+    augment_data = False
+    if len(arguments) > 6:
+        augment_data = True
+        augment_data_percentage = float(arguments[6])
+        assert 0 <= augment_data_percentage <= 1
+else:
+    data_set_name = 'adult'
+    optimization_itr = 100
+    encode = True
+    balanced = False
+    tuned = True
+    augment_data = False
+    augment_data_percentage = 0
+
 target = 'income'
 if data_set_name == 'credit_card':
     target = 'Class'
-
-optimization_itr = int(arguments[2])
-
-encode = False
-
-if len(arguments) > 3:
-    encode = eval(arguments[3])
-
-balanced = False
-if len(arguments) > 4:
-    balanced = eval(arguments[4])
-
-tuned = False
-if len(arguments) > 5:
-    tuned = eval(arguments[5])
-
-augment_data_percentage = 0
-augment_data = False
-if len(arguments) > 6:
-    augment_data = True
-    augment_data_percentage = float(arguments[6])
-    assert 0 <= augment_data_percentage <= 1
 
 prefix = ''
 if data_set_name == 'credit_card':
@@ -62,8 +63,7 @@ if data_set_name == 'credit_card':
     else:
         prefix = 'unbalanced_'
 
-if encode:
-    prefix =  "encoded_" + prefix 
+
 
 print('data_set_name: ', data_set_name)
 print('target: ', target)
@@ -77,11 +77,11 @@ print('prefix: ', prefix)
 
 df_original = utilities.load_data_original(data_set_name, balanced)
 
-# %%
+
 df = df_original.copy()
 if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
-# %%
+
 
 categorical_columns = []
 
@@ -111,9 +111,14 @@ def get_train_validation_test_data(df, encode):
     else:
         return df_train_original, df_val_original, df_test_original
 
-df_train, df_val, df_test = get_train_validation_test_data(df, encode)
-
+# df_train, df_val, df_test = get_train_validation_test_data(df, encode)
+df_train = pd.read_csv("data/input/" + prefix + data_set_name + "_train.csv", index_col=0)
+df_test = pd.read_csv("data/input/" + prefix + data_set_name + "_test.csv", index_col=0)
+df_val = pd.read_csv("data/input/" + prefix + data_set_name + "_validation.csv", index_col=0)
 df_real = df_train.sample(10000, replace = False, random_state = 5)
+
+if encode:
+    prefix =  "encoded_" + prefix 
 
 x_real = df_real.loc[:, df_real.columns != target]
 y_real = df_real[target]
@@ -125,7 +130,6 @@ x_test = df_test.loc[:, df_test.columns != target]
 y_test = df_test[target]
 
 
-# %%
 params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
@@ -167,19 +171,35 @@ sampled_gaussain_copula = None
 sampled_ct_gan = None
 sampled_copula_gan = None
 sampled_tvae = None
-if tuned:
-    sampled_gaussain_copula = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
-    # sampled_ct_gan = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")
-    # sampled_copula_gan = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")
-    # sampled_tvae = pd.read_csv('../data/output/Old result/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")
-    sampled_ct_gan = pd.read_csv('../data/output/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
-    sampled_copula_gan = pd.read_csv('../data/output/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
-    sampled_tvae = pd.read_csv('../data/output/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")[initial_columns_ordering]
+
+if encode:
+    m_name = prefix + data_set_name
 else:
-    sampled_gaussain_copula = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
-    sampled_ct_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_ct_gan.csv")[initial_columns_ordering]
-    sampled_copula_gan = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_copula_gan.csv")[initial_columns_ordering]
-    sampled_tvae = pd.read_csv('../data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_tvae.csv")[initial_columns_ordering]
+    m_name = prefix + data_set_name
+
+if tuned:
+    tuning = "_untuned_"
+else:
+    tuning = "_tuned_"
+
+sampled_gaussain_copula = pd.read_csv("data/output/" + m_name + "_untuned_GaussianCopula_synthetic_data_xgboost.csv")
+sampled_ct_gan = pd.read_csv("data/output/" + m_name + tuning + "CTGAN_synthetic_data_xgboost.csv")
+sampled_copula_gan = pd.read_csv("data/output/" + m_name + tuning + "CopulaGAN_synthetic_data_xgboost.csv")
+sampled_tvae = pd.read_csv("data/output/" + m_name + tuning + "TVAE_synthetic_data_xgboost.csv")
+# if tuned:
+#     "data/output/" + m_name + tuning + method_name + "_synthetic_data_xgboost.csv"
+#     sampled_gaussain_copula = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
+#     # sampled_ct_gan = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")
+#     # sampled_copula_gan = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")
+#     # sampled_tvae = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")
+#     sampled_ct_gan = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
+#     sampled_copula_gan = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
+#     sampled_tvae = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")[initial_columns_ordering]
+# else:
+#     sampled_gaussain_copula = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
+#     sampled_ct_gan = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_ct_gan.csv")[initial_columns_ordering]
+#     sampled_copula_gan = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_copula_gan.csv")[initial_columns_ordering]
+#     sampled_tvae = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_tvae.csv")[initial_columns_ordering]
 
 print(len(sampled_gaussain_copula[sampled_gaussain_copula[target] == 0]) /len(sampled_gaussain_copula))
 print(len(sampled_ct_gan[sampled_ct_gan[target] == 0]) /len(sampled_ct_gan))
@@ -197,11 +217,6 @@ y_copgan = sampled_copula_gan[target]
 x_tvae = sampled_tvae.loc[:, sampled_tvae.columns != target]
 y_tvae = sampled_tvae[target]
 
-
-# %% [markdown]
-# # Optimization
-
-# %%
 
 def getParams(augment_data_percentage:float):
     print('----augment_data_percentage: ', augment_data_percentage)
@@ -226,10 +241,9 @@ def getParams(augment_data_percentage:float):
            } 
         return params_range
 
-# %%
 generated_data_size = 10000
 
-# %%
+
 def objective_maximize_roc(params):
     # Keep track of the best iteration records
     global output 
@@ -318,7 +332,7 @@ def objective_maximize_roc(params):
         'test_roc' : clf_auc,
         }
 
-# %%
+
 def trainDT(max_evals:int):
     # Keep track of the best iteration records
     global output 
@@ -353,7 +367,7 @@ print("==========Executing Baseyan Optimization==========")
 best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, params_history, total_time_BO, best_classifier_model = trainDT(optimization_itr)
 
 
-# %%
+
 def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data_percentage):
     synthetic_data = best_X_synthetic
     prefix = ''
@@ -374,11 +388,11 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
         synthetic_data[target] = best_y_synthetic
         synthetic_data.loc[synthetic_data[target] == True, target] = " <=50K"
         synthetic_data.loc[synthetic_data[target] == False, target] = " >50K"
-        synthetic_data.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     elif data_set_name == 'credit_card':
         target = 'Class'
         synthetic_data[target] = best_y_synthetic
-        synthetic_data.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
     return synthetic_data
@@ -415,9 +429,9 @@ if augment_data_percentage > 0:
 
 clf_best_param_df = pd.DataFrame()
 clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
-clf_best_param_df.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_clf_best_param_xgboost.csv", index=False)
 
-params_history.to_csv("../data/history/" + prefix + data_set_name + str_tuned + "_models_params_alpha_history.csv", index=False)
+params_history.to_csv("data/history/" + prefix + data_set_name + str_tuned + "_models_params_alpha_history.csv", index=False)
 
 
 start_time_GaussianCopula = time.time()
@@ -484,4 +498,4 @@ print('individual_clf_auc: ', individual_clf_auc)
 individual_clf_auc_df = pd.DataFrame()
 individual_clf_auc_df = individual_clf_auc_df._append(individual_clf_auc, ignore_index = True)
 
-individual_clf_auc_df.to_csv("../data/output/" + prefix + data_set_name + str_tuned + "_models_clf_auc_score_and_time_per_each_individual_model.csv", index=False)
+individual_clf_auc_df.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_clf_auc_score_and_time_per_each_individual_model.csv", index=False)

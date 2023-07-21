@@ -15,3 +15,15 @@ slurm-23035072.out
 slurm-23035160.out
 slurm-23035165.out
 slurm-22986357.out
+data/input/adult_test.csv
+data/input/adult_train.csv
+data/input/adult_validation.csv
+data/input/balanced_credit_card_test.csv
+data/input/balanced_credit_card_train.csv
+data/input/balanced_credit_card_validation.csv
+data/input/encoded_adult_test.csv
+data/input/encoded_adult_train.csv
+data/input/encoded_adult_validation.csv
+data/input/unbalanced_credit_card_test.csv
+data/input/unbalanced_credit_card_train.csv
+data/input/unbalanced_credit_card_validation.csv
