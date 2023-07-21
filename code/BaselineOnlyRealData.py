@@ -155,4 +155,4 @@ print('baseline_real_clf_auc: ', baseline_real_clf_auc)
 baseline_real_clf_auc_df = pd.DataFrame()
 baseline_real_clf_auc_df = baseline_real_clf_auc_df._append(baseline_real_clf_auc, ignore_index = True)
 
-baseline_real_clf_auc_df.to_csv("../data/output/" + prefix + data_set_name + "_baseline_real_data_auc_score.csv", index=False)
+baseline_real_clf_auc_df.to_csv("data/output/" + prefix + data_set_name + "_baseline_real_data_auc_score.csv", index=False)
