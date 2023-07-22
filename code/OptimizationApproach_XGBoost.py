@@ -178,9 +178,9 @@ else:
     m_name = prefix + data_set_name
 
 if tuned:
-    tuning = "_tuned_"
-else:
     tuning = "_untuned_"
+else:
+    tuning = "_tuned_"
 
 sampled_gaussain_copula = pd.read_csv("data/output/" + m_name + "_untuned_GaussianCopula_synthetic_data_xgboost.csv")
 sampled_ct_gan = pd.read_csv("data/output/" + m_name + tuning + "CTGAN_synthetic_data_xgboost.csv")
@@ -400,7 +400,6 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
 # HERE ENCODING HAPPENS FOR BOTH XGBOOST AND SYNTHESIZERS
 # if encode:
 #     best_X_synthetic = encoder.inverse_transform(best_X_synthetic)[initial_columns_ordering]
-
 
 save_synthetic_data(data_set_name, best_X_synthetic, best_y_synthetic, balanced, encode, tuned, augment_data_percentage)
 

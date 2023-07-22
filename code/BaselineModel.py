@@ -139,7 +139,7 @@ params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
         'seed' : 5,
-        'base_score' : len(df_train[df_train[target] == 1]) / len(df_train),
+        # 'base_score' : len(df_train[df_train[target] == 1]) / len(df_train),
         'max_delta_step' : 1.0
         # 'scale_pos_weight' : len(df_train[df_train[target] == 0]) / len(df_train[df_train[target] == 1])
 }
@@ -166,11 +166,6 @@ def downstream_loss(sampled, df_val, target, classifier):
     x_val = df_val.loc[:, sampled.columns != target]
     y_val = df_val[target]
 
-    if (sum(y_samp) / len(y_samp) > 0) & (sum(y_samp) / len(y_samp) < 1):
-        params_xgb['base_score'] =  sum(y_samp) / len(y_samp)
-    else:
-        #HERE ONLY ONE CLASS PRESENTS IN THE DATA
-        return 0, 0, None
     # params_xgb['base_score'] =  len(sampled[sampled[target] == 1]) / len(sampled)
     if classifier == "XGB":
         for column in x_samp.columns:
