@@ -10,5 +10,8 @@ c_dim3,0
 d_dim1,2
 d_dim2,2
 d_dim3,0
-tuned_val_roc,0.8758122254310305
-untuned_val_roc,0.8758122254310305
+tuned_val_roc,0.8673326774825889
+untuned_val_roc,0.8673326774825889
+tuned_test_roc,0.8634892693826648
+untuned_test_roc,0.8634892693826648
+elapsed_time,436.82463240623474

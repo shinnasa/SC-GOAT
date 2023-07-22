@@ -35,22 +35,25 @@ def objective_maximize(params):
     N_sim = params["N_sim"]
     if short_epoch:
         params['epochs'] = 1
-    if data_set_name == 'unbalanced_credit_card':
-        df1 = df_train.loc[df_train[target] == 1]
-        df0 = df_train.loc[df_train[target] == 0]
-        synth1 = fit_synth(df_train, params)
-        synth0 = fit_synth(df_train, params)
-        synth1.fit(df1)
-        synth0.fit(df0)
+    # if data_set_name == 'unbalanced_credit_card':
+    #     df1 = df_train.loc[df_train[target] == 1]
+    #     df0 = df_train.loc[df_train[target] == 0]
+    #     synth1 = fit_synth(df_train, params)
+    #     synth0 = fit_synth(df_train, params)
+    #     synth1.fit(df1)
+    #     synth0.fit(df0)
         
-        num_rows1 = round(N_sim*df[target].mean())
-        sampled1 = synth1.sample(num_rows = num_rows1)
-        sampled0 = synth0.sample(num_rows = N_sim - num_rows1)
-        sampled = pd.concat([sampled1, sampled0], ignore_index=True)
-    else:
-        synth = fit_synth(df_train, params)
-        synth.fit(df_train)
-        sampled = synth.sample(num_rows = N_sim)
+    #     num_rows1 = round(N_sim*df[target].mean())
+    #     sampled1 = synth1.sample(num_rows = num_rows1)
+    #     sampled0 = synth0.sample(num_rows = N_sim - num_rows1)
+    #     sampled = pd.concat([sampled1, sampled0], ignore_index=True)
+    # else:
+    #     synth = fit_synth(df_train, params)
+    #     synth.fit(df_train)
+    #     sampled = synth.sample(num_rows = N_sim)
+    synth = fit_synth(df_train, params)
+    synth.fit(df_train)
+    sampled = synth.sample(num_rows = N_sim)
     clf_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
     print(clf_auc)
     
@@ -105,7 +108,7 @@ def trainDT(max_evals:int, method_name):
                     space=params_range,
                     max_evals=max_evals,
                     # rstate=np.random.default_rng(42),
-                    early_stop_fn=no_progress_loss(15),
+                    early_stop_fn=no_progress_loss(10),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
@@ -125,7 +128,7 @@ if len(arguments) > 2:
 
     method_name = arguments[2]
     encode = eval(arguments[3]) # either categotical or target
-    optimization_itr = 350
+    optimization_itr = 1
     short_epoch = False
 else:
     data_set_name = 'adult'
@@ -178,12 +181,11 @@ test_auc_first = downstream_loss(first_synth, df_test, target, classifier = "XGB
 # Save data
 clf_best_param["tuned_val_roc"] = best_val_roc
 clf_best_param["untuned_val_roc"] = first_val_roc
+clf_best_param["tuned_test_roc"] = test_auc_best
+clf_best_param["untuned_test_roc"] = test_auc_first
+clf_best_param["elapsed_time"] = elapsed_time
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
 df_bparam.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv")
 best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
 first_synth.to_csv("data/output/" + m_name + "_untuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
 clf_auc_history.to_csv("data/history/" + m_name + "_" + method_name + "_history_auc_score_xgboost.csv")
-
-# Create a DataFrame with a single row and column
-dfres = pd.DataFrame([test_auc_best, test_auc_first, elapsed_time], columns=['values'], index = ['test_auc_tuned', 'test_auc_untuned', "elapsed_time"])
-dfres.to_csv("data/output/" + m_name + "_" + method_name + '_test_auc.csv')

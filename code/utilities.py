@@ -247,7 +247,6 @@ def fit_synth(df, params):
 def downstream_loss(sampled, df_te, target, classifier = "XGB"):
     params_xgb = {
         'eval_metric': 'auc', 'objective':'binary:logistic', 'seed': 5,
-        'base_score' : len(sampled[sampled[target] == 1]) / len(sampled),
     }
     x_samp = sampled.loc[:, sampled.columns != target]
     y_samp = sampled[target]
