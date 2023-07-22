@@ -113,8 +113,8 @@ def get_train_validation_test_data(df, encode):
 
 # df_train, df_val, df_test = get_train_validation_test_data(df, encode)
 df_train = pd.read_csv("data/input/" + prefix + data_set_name + "_train.csv", index_col=0)
-df_val = pd.read_csv("data/input/" + prefix + data_set_name + "_test.csv", index_col=0)
-df_test = pd.read_csv("data/input/" + prefix + data_set_name + "_validation.csv", index_col=0)
+df_val = pd.read_csv("data/input/" + prefix + data_set_name + "_validation.csv", index_col=0)
+df_test = pd.read_csv("data/input/" + prefix + data_set_name + "_test.csv", index_col=0)
 df_real = df_train.sample(10000, replace = False, random_state = 5)
 
 if encode:
