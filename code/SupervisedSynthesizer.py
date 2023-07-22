@@ -27,12 +27,14 @@ warnings.simplefilter("ignore")
 # Defines objective function for the Bayesian optimizer
 def objective_maximize(params):
     global clf_auc_history
-    global best_test_roc 
+    global best_val_roc 
     global best_synth
+    global first_val_roc
+    global first_synth
     global params_range
     N_sim = params["N_sim"]
-    if baseline:
-        params = get_init_params(method_name)
+    if short_epoch:
+        params['epochs'] = 1
     if data_set_name == 'unbalanced_credit_card':
         df1 = df_train.loc[df_train[target] == 1]
         df0 = df_train.loc[df_train[target] == 0]
@@ -49,31 +51,35 @@ def objective_maximize(params):
         synth = fit_synth(df_train, params)
         synth.fit(df_train)
         sampled = synth.sample(num_rows = N_sim)
-    clf_auc = downstream_loss(sampled, df_test, target, classifier = "XGB")
+    clf_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
     print(clf_auc)
     
     
-    if clf_auc > best_test_roc:
-        best_test_roc = clf_auc
+    if clf_auc > best_val_roc:
+        best_val_roc = clf_auc
         best_synth = sampled
     if clf_auc_history.size == 0:
-        output_ = {'test_roc' : [clf_auc]}
+        output_ = {'val_roc' : [clf_auc]}
         clf_auc_history = pd.DataFrame.from_dict(output_)
+        first_synth = sampled
+        first_val_roc = best_val_roc
     else:
-        output_ = {'test_roc' : [clf_auc]}
+        output_ = {'val_roc' : [clf_auc]}
         clf_auc_history = pd.concat((clf_auc_history,  pd.DataFrame.from_dict(output_)))
 
     return {
         'loss' : 1 - clf_auc,
         'status' : STATUS_OK,
         'eval_time ': time.time(),
-        'test_roc' : clf_auc,
+        'val_roc' : clf_auc,
         }
 
 # The Bayesian optimizer
 def trainDT(max_evals:int, method_name):
-    global best_test_roc
+    global best_val_roc
     global best_synth
+    global first_val_roc
+    global first_synth
     global clf_auc_history
     global params_range
     if method_name == "GaussianCopula":
@@ -87,11 +93,11 @@ def trainDT(max_evals:int, method_name):
             best_synth = synth.sample_from_conditions(conditions=[class1,  class0])
         else:
             best_synth = synth.sample(num_rows = N_sim)
-        best_test_roc = downstream_loss(best_synth, df_test, target, classifier = "XGB")
-        return best_test_roc, best_synth, {}, pd.DataFrame.from_dict({})
+        best_val_roc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
+        return best_val_roc, best_synth, {}, pd.DataFrame.from_dict({}), best_val_roc, best_synth
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
-    best_test_roc = 0
+    best_val_roc = 0
     init_vals = [get_init_params(method_name)]
     trials = generate_trials_to_calculate(init_vals)
     start = time.time()
@@ -99,13 +105,13 @@ def trainDT(max_evals:int, method_name):
                     space=params_range,
                     max_evals=max_evals,
                     # rstate=np.random.default_rng(42),
-                    early_stop_fn=no_progress_loss(10),
+                    early_stop_fn=no_progress_loss(15),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
-    print(best_test_roc)
+    print(best_val_roc)
     print('It takes %s minutes' % ((time.time() - start)/60))
-    return best_test_roc, best_synth, clf_best_param, clf_auc_history
+    return best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc,first_synth
 
 # Load data and create train test split from the smaller dataset that contains 10% of the full data
 arguments = sys.argv
@@ -119,21 +125,18 @@ if len(arguments) > 2:
 
     method_name = arguments[2]
     encode = eval(arguments[3]) # either categotical or target
-    baseline = eval(arguments[4])
-    if baseline:
-        optimization_itr = 1
-    else:
-        optimization_itr = 350
+    optimization_itr = 350
+    short_epoch = False
 else:
-    data_set_name = 'unbalanced_credit_card'
-    method_name = 'GaussianCopula'
+    data_set_name = 'adult'
+    method_name = 'TVAE'
     optimization_itr = 1
     if data_set_name == 'adult':
         target = 'income'
     else:
         target = "Class"
     encode = False
-    baseline = True
+    short_epoch = True
 
 
 if encode:
@@ -141,14 +144,8 @@ if encode:
 else:
     m_name = data_set_name
 
-if baseline:
-    tuning = "_untuned_"
-else:
-    tuning = "_tuned_"
-
-
-if os.path.exists("data/output/" + m_name + tuning + method_name + "_clf_best_param_xgboost.csv"):
-    raise FileExistsError(f"This results already exists. Skipping to the next")
+if os.path.exists("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"):
+    raise FileExistsError("This results already exists. Skipping to the next")
 
 df_original = load_data(data_set_name)
 
@@ -157,40 +154,36 @@ if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
 
 df_train, df_val, df_test, encoder = get_train_validation_test_data(df, encode, target)
-if encode:
-    df_train = encoder.inverse_transform(df_train)
-    df_train = df_train[df.columns]
-    df_test = encoder.inverse_transform(df_test)
-    df_test = df_test[df.columns]
-    df_val = encoder.inverse_transform(df_val)
-    df_val = df_val[df.columns]
-df_train.to_csv('data/input/' + m_name + '_train.csv')
-df_test.to_csv('data/input/' + m_name + '_test.csv')
-df_val.to_csv('data/input/' + m_name  + '_validation.csv')
+if not encode:
+    df_train.to_csv('data/input/' + m_name + '_train.csv')
+    df_val.to_csv('data/input/' + m_name  + '_validation.csv')
+    df_test.to_csv('data/input/' + m_name + '_test.csv')
 
 start_time = time.time()
-best_test_roc, best_synth, clf_best_param, clf_auc_history = trainDT(max_evals=optimization_itr, method_name=method_name)
+best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc, first_synth = trainDT(max_evals=optimization_itr, method_name=method_name)
 elapsed_time = time.time() - start_time
 
-# Inverse transform if it was 
 if encode:
     best_synth = encoder.inverse_transform(best_synth)
     best_synth = best_synth[df.columns]
-    print('df_val: ', df_val[target].unique())
-    df_val = encoder.inverse_transform(df_val)
-    df_val = df_val[df.columns]
+    first_synth = encoder.inverse_transform(first_synth)
+    first_synth = first_synth[df.columns]
+    df_test = encoder.inverse_transform(df_test)
+    df_test = df_test[df.columns]
 
-# Get validation auc
-validation_auc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
+# Get test auc
+test_auc_best = downstream_loss(best_synth, df_test, target, classifier = "XGB")
+test_auc_first = downstream_loss(first_synth, df_test, target, classifier = "XGB")
 
 # Save data
-clf_best_param["test_roc"] = best_test_roc
-
+clf_best_param["tuned_val_roc"] = best_val_roc
+clf_best_param["untuned_val_roc"] = first_val_roc
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bparam.to_csv("data/output/" + m_name + tuning + method_name + "_clf_best_param_xgboost.csv")
-best_synth.to_csv("data/output/" + m_name + tuning + method_name + "_synthetic_data_xgboost.csv", index = False)
-clf_auc_history.to_csv("data/history/" + m_name + tuning + method_name + "_history_auc_score_xgboost.csv")
+df_bparam.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv")
+best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
+first_synth.to_csv("data/output/" + m_name + "_untuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
+clf_auc_history.to_csv("data/history/" + m_name + "_" + method_name + "_history_auc_score_xgboost.csv")
 
 # Create a DataFrame with a single row and column
-dfres = pd.DataFrame([validation_auc, elapsed_time], columns=['values'], index = ['valudation_auc', "elapsed_time"])
-dfres.to_csv("data/output/" + m_name + tuning + method_name + '_validation_auc.csv')
+dfres = pd.DataFrame([test_auc_best, test_auc_first, elapsed_time], columns=['values'], index = ['test_auc_tuned', 'test_auc_untuned', "elapsed_time"])
+dfres.to_csv("data/output/" + m_name + "_" + method_name + '_test_auc.csv')

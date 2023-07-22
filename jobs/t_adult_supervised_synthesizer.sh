@@ -10,8 +10,6 @@
 module load miniconda
 conda activate sdv
 
-python code/SupervisedSynthesizer.py adult CTGAN True False
-python code/SupervisedSynthesizer.py adult TVAE True False
-python code/SupervisedSynthesizer.py adult CopulaGAN True False
+python code/SupervisedSynthesizer.py adult $1 True False
 
 echo "Done"

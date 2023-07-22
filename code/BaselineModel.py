@@ -68,11 +68,11 @@ train = True
 
 df_original = utilities.load_data_original(data_set_name, balanced)
 
-# %%
+
 df = df_original.copy()
 if len(df) > 50000:
     df = df.sample(50000, replace = False, random_state = 5)
-# %%
+
 
 categorical_columns = []
 
@@ -114,7 +114,6 @@ df_train, df_val, df_test = get_train_validation_test_data(df, encode)
 # print(len(df_test))
 
 # utilities.save_test_train_data(data_set_name, df_train, df_test, balanced)
-# %%
 x_train = df_train.loc[:, df_train.columns != target]
 y_train = df_train[target]
 
@@ -124,7 +123,6 @@ y_val = df_val[target]
 x_test = df_test.loc[:, df_test.columns != target]
 y_test = df_test[target]
 
-# %%
 x_train
 
 # %%
