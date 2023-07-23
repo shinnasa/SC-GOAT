@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
+from scipy.special import softmax
 from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
+from hyperopt.fmin import generate_trials_to_calculate
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 from sdv.single_table import GaussianCopulaSynthesizer
@@ -244,6 +246,28 @@ def getParams(augment_data_percentage:float):
 generated_data_size = 10000
 
 
+#Compute initial aphpas for warm start
+lmname =['GaussianCopula', 'CTGAN', 'CopulaGAN', 'TVAE']
+def computeInitialAlphaForWarmStart():
+    val_auc = []
+    for method_name in lmname:
+        fname = "data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"
+        if not os.path.exists(fname):
+            print(f"File '{fname}' does not exist. Skipping...")
+            continue
+        df = pd.read_csv(fname, index_col=0)
+        luntuned = [df.loc['untuned_val_roc', 'Value']]
+        if len(val_auc) == 0:
+            val_auc = luntuned
+        else:
+            val_auc.append(float(luntuned[0]))
+        
+    val_auc_temp = [val_auc[i] - min(val_auc) + 1e-3 for i in range(len(val_auc))]
+    scale = sum(val_auc_temp)
+    alphas = [(1 / scale) * val_auc_temp[i] for i in range(len(val_auc_temp))]
+        
+    return alphas
+
 def objective_maximize_roc(params):
     # Keep track of the best iteration records
     global output 
@@ -256,8 +280,11 @@ def objective_maximize_roc(params):
 
     # Scale the alphas so that their sum adds up to 1
     alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4'], params['alpha_5']]
-    scale = sum(alpha_temp)
-    alpha = [(1 / scale) * alpha_temp[i] for i in range(len(alpha_temp))]
+    alpha_modified = [alpha_temp[i] - min(alpha_temp) + 1e-3 for i in range(len(alpha_temp))]
+    scale = sum(alpha_modified)
+    # alpha = softmax(alpha_temp)
+    alpha = [(1 / scale) * alpha_modified[i] for i in range(len(alpha_modified))]
+    # alpha = [(1 / scale) * alpha_temp[i] for i in range(len(alpha_temp))]
     index = np.argmax(alpha)
     params['alpha_1'] = alpha[0]
     params['alpha_2'] = alpha[1]
@@ -346,7 +373,14 @@ def trainDT(max_evals:int):
     best_val_roc = 0
     train_roc = 0
     best_params = []
-    trials = Trials()
+    initial_alphas = computeInitialAlphaForWarmStart()
+    initial_alphas_dict = {'alpha_1' : initial_alphas[0], 
+                           'alpha_2' : initial_alphas[1], 
+                           'alpha_3' : initial_alphas[2] ,
+                           'alpha_4' : initial_alphas[3], 
+                           'alpha_5' : initial_alphas[4]
+                           }
+    trials = generate_trials_to_calculate([initial_alphas_dict])
     start_time_BO = time.time()
     params_range = getParams(augment_data_percentage)
     print('getParams: ', getParams(augment_data_percentage))
