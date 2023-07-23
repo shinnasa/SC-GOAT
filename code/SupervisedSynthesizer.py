@@ -108,7 +108,7 @@ def trainDT(max_evals:int, method_name):
                     space=params_range,
                     max_evals=max_evals,
                     # rstate=np.random.default_rng(42),
-                    early_stop_fn=no_progress_loss(10),
+                    early_stop_fn=no_progress_loss(20),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)

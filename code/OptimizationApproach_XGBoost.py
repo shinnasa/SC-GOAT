@@ -65,7 +65,7 @@ if data_set_name == 'credit_card':
     else:
         prefix = 'unbalanced_'
 
-
+outpath = "data/output/ES10/"
 
 print('data_set_name: ', data_set_name)
 print('target: ', target)
@@ -184,24 +184,10 @@ if tuned:
 else:
     tuning = "_tuned_"
 
-sampled_gaussain_copula = pd.read_csv("data/output/" + m_name + "_untuned_GaussianCopula_synthetic_data_xgboost.csv")
-sampled_ct_gan = pd.read_csv("data/output/" + m_name + tuning + "CTGAN_synthetic_data_xgboost.csv")
-sampled_copula_gan = pd.read_csv("data/output/" + m_name + tuning + "CopulaGAN_synthetic_data_xgboost.csv")
-sampled_tvae = pd.read_csv("data/output/" + m_name + tuning + "TVAE_synthetic_data_xgboost.csv")
-# if tuned:
-#     "data/output/" + m_name + tuning + method_name + "_synthetic_data_xgboost.csv"
-#     sampled_gaussain_copula = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
-#     # sampled_ct_gan = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")
-#     # sampled_copula_gan = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")
-#     # sampled_tvae = pd.read_csv('data/output/Old result/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")
-#     sampled_ct_gan = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_CTGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
-#     sampled_copula_gan = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_CopulaGAN_synthetic_data_xgboost.csv")[initial_columns_ordering]
-#     sampled_tvae = pd.read_csv('data/output/' + prefix + data_set_name + "_tuned_TVAE_synthetic_data_xgboost.csv")[initial_columns_ordering]
-# else:
-#     sampled_gaussain_copula = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_gaussain_copula.csv")[initial_columns_ordering]
-#     sampled_ct_gan = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_ct_gan.csv")[initial_columns_ordering]
-#     sampled_copula_gan = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_copula_gan.csv")[initial_columns_ordering]
-#     sampled_tvae = pd.read_csv('data/' + data_set_name + "/" + prefix + data_set_name + "_sampled_untuned_tvae.csv")[initial_columns_ordering]
+sampled_gaussain_copula = pd.read_csv(outpath + m_name + "_untuned_GaussianCopula_synthetic_data_xgboost.csv")
+sampled_ct_gan = pd.read_csv(outpath + m_name + tuning + "CTGAN_synthetic_data_xgboost.csv")
+sampled_copula_gan = pd.read_csv(outpath + m_name + tuning + "CopulaGAN_synthetic_data_xgboost.csv")
+sampled_tvae = pd.read_csv(outpath + m_name + tuning + "TVAE_synthetic_data_xgboost.csv")
 
 print(len(sampled_gaussain_copula[sampled_gaussain_copula[target] == 0]) /len(sampled_gaussain_copula))
 print(len(sampled_ct_gan[sampled_ct_gan[target] == 0]) /len(sampled_ct_gan))
@@ -222,13 +208,14 @@ y_tvae = sampled_tvae[target]
 
 def getParams(augment_data_percentage:float):
     print('----augment_data_percentage: ', augment_data_percentage)
+
     if augment_data_percentage > 0:
         params_range = {
             'alpha_1':  hp.uniform('alpha_1', 0, 1),
             'alpha_2':  hp.uniform('alpha_2', 0, 1),
             'alpha_3':  hp.uniform('alpha_3', 0, 1),
             'alpha_4':  hp.uniform('alpha_4', 0, 1),
-            'alpha_5':  augment_data_percentage,
+            # 'alpha_5':  augment_data_percentage,
             'generated_data_size': 10000
            } 
         return params_range
@@ -238,7 +225,7 @@ def getParams(augment_data_percentage:float):
             'alpha_2':  hp.uniform('alpha_2', 0, 1),
             'alpha_3':  hp.uniform('alpha_3', 0, 1),
             'alpha_4':  hp.uniform('alpha_4', 0, 1),
-            'alpha_5':  0,
+            # 'alpha_5':  0,
             'generated_data_size': 10000
            } 
         return params_range
@@ -251,7 +238,7 @@ lmname =['GaussianCopula', 'CTGAN', 'CopulaGAN', 'TVAE']
 def computeInitialAlphaForWarmStart():
     val_auc = []
     for method_name in lmname:
-        fname = "data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"
+        fname = outpath + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"
         if not os.path.exists(fname):
             print(f"File '{fname}' does not exist. Skipping...")
             continue
@@ -279,7 +266,8 @@ def objective_maximize_roc(params):
     global best_classifier_model
 
     # Scale the alphas so that their sum adds up to 1
-    alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4'], params['alpha_5']]
+    # alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4'], params['alpha_5']]
+    alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4']]
     alpha_modified = [alpha_temp[i] - min(alpha_temp) + 1e-3 for i in range(len(alpha_temp))]
     scale = sum(alpha_modified)
     # alpha = softmax(alpha_temp)
@@ -290,11 +278,11 @@ def objective_maximize_roc(params):
     params['alpha_2'] = alpha[1]
     params['alpha_3'] = alpha[2]
     params['alpha_4'] = alpha[3]
-    params['alpha_5'] = alpha[4]
+    # params['alpha_5'] = alpha[4]
 
     # Combine all the data into a single list
-    X_temp = [x_gauss, x_ctgan, x_copgan, x_tvae, x_real]
-    y_temp = [y_gauss, y_ctgan, y_copgan, y_tvae, y_real]
+    X_temp = [x_gauss, x_ctgan, x_copgan, x_tvae] # , X_real]
+    y_temp = [y_gauss, y_ctgan, y_copgan, y_tvae] # , y_real]
     
     # Randomly select the data from each source
     random.seed = 5
@@ -308,7 +296,7 @@ def objective_maximize_roc(params):
 
     generated_data_size = params['generated_data_size']
 
-    size = [int(alpha[i] * len(y_temp[i].index.values)) for i in range(5)]
+    size = [int(alpha[i] * len(y_temp[i].index.values)) for i in range(len(alpha))]
     size[index] += (generated_data_size - sum(size))
     
     # Randomly select the data from each source based on the alpha values
@@ -378,7 +366,7 @@ def trainDT(max_evals:int):
                            'alpha_2' : initial_alphas[1], 
                            'alpha_3' : initial_alphas[2] ,
                            'alpha_4' : initial_alphas[3], 
-                           'alpha_5' : initial_alphas[4]
+                        #    'alpha_5' : 0
                            }
     trials = generate_trials_to_calculate([initial_alphas_dict])
     start_time_BO = time.time()
@@ -422,11 +410,11 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
         synthetic_data[target] = best_y_synthetic
         synthetic_data.loc[synthetic_data[target] == True, target] = " <=50K"
         synthetic_data.loc[synthetic_data[target] == False, target] = " >50K"
-        synthetic_data.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv(outpath + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     elif data_set_name == 'credit_card':
         target = 'Class'
         synthetic_data[target] = best_y_synthetic
-        synthetic_data.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
+        synthetic_data.to_csv(outpath + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     else:
         raise ValueError("Invalid data set name: " + data_set_name)
     return synthetic_data
@@ -462,73 +450,73 @@ if augment_data_percentage > 0:
 
 clf_best_param_df = pd.DataFrame()
 clf_best_param_df = clf_best_param_df._append(clf_best_param, ignore_index = True)
-clf_best_param_df.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df.to_csv(outpath + prefix + data_set_name + str_tuned + "_models_clf_best_param_xgboost.csv", index=False)
 
 params_history.to_csv("data/history/" + prefix + data_set_name + str_tuned + "_models_params_alpha_history.csv", index=False)
 
 
-start_time_GaussianCopula = time.time()
-clf_auc_train_gaussain_copula, clf_auc_val_gaussain_copula, clf_gaussain_copula = downstream_loss(sampled_gaussain_copula, df_val, target, 'XGB')
-end_time_GaussianCopula = time.time()
-start_time_CTGAN = time.time()
-clf_auc_train_ct_gan, clf_auc_val_ct_gan, clf_ct_gan= downstream_loss(sampled_ct_gan, df_val, target, 'XGB')
-end_time_CTGAN = time.time()
-start_time_CopulaGAN = time.time()
-clf_auc_train_copula_gan, clf_auc_val_copula_gan, clf_copula_gan = downstream_loss(sampled_copula_gan, df_val, target, 'XGB')
-end_time_CopulaGAN = time.time()
-start_time_TVAE = time.time()
-clf_auc_train_tvae, clf_auc_val_tvae, clf_tvae = downstream_loss(sampled_tvae, df_val, target, 'XGB')
-end_time_TVAE = time.time()
+# start_time_GaussianCopula = time.time()
+# clf_auc_train_gaussain_copula, clf_auc_val_gaussain_copula, clf_gaussain_copula = downstream_loss(sampled_gaussain_copula, df_val, target, 'XGB')
+# end_time_GaussianCopula = time.time()
+# start_time_CTGAN = time.time()
+# clf_auc_train_ct_gan, clf_auc_val_ct_gan, clf_ct_gan= downstream_loss(sampled_ct_gan, df_val, target, 'XGB')
+# end_time_CTGAN = time.time()
+# start_time_CopulaGAN = time.time()
+# clf_auc_train_copula_gan, clf_auc_val_copula_gan, clf_copula_gan = downstream_loss(sampled_copula_gan, df_val, target, 'XGB')
+# end_time_CopulaGAN = time.time()
+# start_time_TVAE = time.time()
+# clf_auc_train_tvae, clf_auc_val_tvae, clf_tvae = downstream_loss(sampled_tvae, df_val, target, 'XGB')
+# end_time_TVAE = time.time()
 
-for column in x_test.columns:
-    if x_test[column].dtype == 'object':
-        x_test[column] = x_test[column].astype('category')
-dtest = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
+# for column in x_test.columns:
+#     if x_test[column].dtype == 'object':
+#         x_test[column] = x_test[column].astype('category')
+# dtest = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
 
-clf_auc_test_gaussain_copula = 0.5
-if clf_gaussain_copula != None:
-    clf_probs_test_gaussain_copula = clf_gaussain_copula.predict(dtest)
-    clf_auc_test_gaussain_copula = roc_auc_score(y_test.astype(float), clf_probs_test_gaussain_copula)
+# clf_auc_test_gaussain_copula = 0.5
+# if clf_gaussain_copula != None:
+#     clf_probs_test_gaussain_copula = clf_gaussain_copula.predict(dtest)
+#     clf_auc_test_gaussain_copula = roc_auc_score(y_test.astype(float), clf_probs_test_gaussain_copula)
 
-clf_auc_test_ct_gan = 0.5
-if clf_ct_gan != None:
-    clf_probs_test_ct_gan = clf_ct_gan.predict(dtest)
-    clf_auc_test_ct_gan = roc_auc_score(y_test.astype(float), clf_probs_test_ct_gan)
+# clf_auc_test_ct_gan = 0.5
+# if clf_ct_gan != None:
+#     clf_probs_test_ct_gan = clf_ct_gan.predict(dtest)
+#     clf_auc_test_ct_gan = roc_auc_score(y_test.astype(float), clf_probs_test_ct_gan)
 
-clf_auc_test_copula_gan = 0.5
-if clf_copula_gan != None:
-    clf_probs_test_copula_gan = clf_copula_gan.predict(dtest)
-    clf_auc_test_copula_gan = roc_auc_score(y_test.astype(float), clf_probs_test_copula_gan)
+# clf_auc_test_copula_gan = 0.5
+# if clf_copula_gan != None:
+#     clf_probs_test_copula_gan = clf_copula_gan.predict(dtest)
+#     clf_auc_test_copula_gan = roc_auc_score(y_test.astype(float), clf_probs_test_copula_gan)
 
-clf_auc_test_tvae = 0.5
-if clf_tvae != None:
-    clf_probs_test_tvae = clf_tvae.predict(dtest)
-    clf_auc_test_tvae = roc_auc_score(y_test.astype(float), clf_probs_test_tvae)
+# clf_auc_test_tvae = 0.5
+# if clf_tvae != None:
+#     clf_probs_test_tvae = clf_tvae.predict(dtest)
+#     clf_auc_test_tvae = roc_auc_score(y_test.astype(float), clf_probs_test_tvae)
 
-individual_clf_auc = {'clf_auc_train_gaussain_copula' : clf_auc_train_gaussain_copula,
-                    'clf_auc_val_gaussain_copula' : clf_auc_val_gaussain_copula,
-                    'clf_auc_test_gaussain_copula' : clf_auc_test_gaussain_copula,
-                    'clf_auc_train_ct_gan' : clf_auc_train_ct_gan,
-                    'clf_auc_val_ct_gan' : clf_auc_val_ct_gan,
-                    'clf_auc_test_ct_gan' : clf_auc_test_ct_gan, 
-                    'clf_auc_train_copula_gan' : clf_auc_train_copula_gan,
-                    'clf_auc_val_copula_gan' : clf_auc_val_copula_gan,
-                    'clf_auc_test_copula_gan' : clf_auc_test_copula_gan,
-                    'clf_auc_train_tvae' : clf_auc_train_tvae,
-                    'clf_auc_val_tvae' : clf_auc_val_tvae,
-                    'clf_auc_test_tvae' : clf_auc_test_tvae,
-                    'train' : len(sampled_tvae),
-                    'val' : len(df_val),
-                    'test' : len(df_test)}
+# individual_clf_auc = {'clf_auc_train_gaussain_copula' : clf_auc_train_gaussain_copula,
+#                     'clf_auc_val_gaussain_copula' : clf_auc_val_gaussain_copula,
+#                     'clf_auc_test_gaussain_copula' : clf_auc_test_gaussain_copula,
+#                     'clf_auc_train_ct_gan' : clf_auc_train_ct_gan,
+#                     'clf_auc_val_ct_gan' : clf_auc_val_ct_gan,
+#                     'clf_auc_test_ct_gan' : clf_auc_test_ct_gan, 
+#                     'clf_auc_train_copula_gan' : clf_auc_train_copula_gan,
+#                     'clf_auc_val_copula_gan' : clf_auc_val_copula_gan,
+#                     'clf_auc_test_copula_gan' : clf_auc_test_copula_gan,
+#                     'clf_auc_train_tvae' : clf_auc_train_tvae,
+#                     'clf_auc_val_tvae' : clf_auc_val_tvae,
+#                     'clf_auc_test_tvae' : clf_auc_test_tvae,
+#                     'train' : len(sampled_tvae),
+#                     'val' : len(df_val),
+#                     'test' : len(df_test)}
 
-individual_clf_auc["total_time_GaussianCopula"] = end_time_GaussianCopula - start_time_GaussianCopula
-individual_clf_auc["total_time_CTGAN"] = end_time_CTGAN - start_time_CTGAN
-individual_clf_auc["total_time_CopulaGAN"] = end_time_CopulaGAN - start_time_CopulaGAN
-individual_clf_auc["total_time_TVAE"] = end_time_TVAE - start_time_TVAE
+# individual_clf_auc["total_time_GaussianCopula"] = end_time_GaussianCopula - start_time_GaussianCopula
+# individual_clf_auc["total_time_CTGAN"] = end_time_CTGAN - start_time_CTGAN
+# individual_clf_auc["total_time_CopulaGAN"] = end_time_CopulaGAN - start_time_CopulaGAN
+# individual_clf_auc["total_time_TVAE"] = end_time_TVAE - start_time_TVAE
 
-print('individual_clf_auc: ', individual_clf_auc)
+# print('individual_clf_auc: ', individual_clf_auc)
 
-individual_clf_auc_df = pd.DataFrame()
-individual_clf_auc_df = individual_clf_auc_df._append(individual_clf_auc, ignore_index = True)
+# individual_clf_auc_df = pd.DataFrame()
+# individual_clf_auc_df = individual_clf_auc_df._append(individual_clf_auc, ignore_index = True)
 
-individual_clf_auc_df.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_clf_auc_score_and_time_per_each_individual_model.csv", index=False)
+# individual_clf_auc_df.to_csv("data/output/" + prefix + data_set_name + str_tuned + "_models_clf_auc_score_and_time_per_each_individual_model.csv", index=False)

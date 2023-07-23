@@ -1,0 +1,2 @@
+clf_auc_train_gaussain_copula,clf_auc_val_gaussain_copula,clf_auc_test_gaussain_copula,clf_auc_train_ct_gan,clf_auc_val_ct_gan,clf_auc_test_ct_gan,clf_auc_train_copula_gan,clf_auc_val_copula_gan,clf_auc_test_copula_gan,clf_auc_train_tvae,clf_auc_val_tvae,clf_auc_test_tvae,train,val,test,total_time_GaussianCopula,total_time_CTGAN,total_time_CopulaGAN,total_time_TVAE
+1.0,0.9999248496993988,0.8837562437562437,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,10000.0,9990.0,5010.0,0.6344048976898193,0.003858804702758789,0.0033423900604248047,0.0031719207763671875
