@@ -145,10 +145,10 @@ def downstream_loss(sampled, df_val, target, classifier):
     y_val = df_val[target]
 
     if (sum(y_samp) / len(y_samp) > 0) & (sum(y_samp) / len(y_samp) < 1):
-        params_xgb['base_score'] =  sum(y_samp) / len(y_samp)
+        pass
     else:
         #HERE ONLY ONE CLASS PRESENTS IN THE DATA
-        return 0, 0, None
+        return 0.5, 0.5, None
     # params_xgb['base_score'] =  len(sampled[sampled[target] == 1]) / len(sampled)
     if classifier == "XGB":
         for column in x_samp.columns:
@@ -207,7 +207,7 @@ print(len(sampled_copula_gan[sampled_copula_gan[target] == 0]) /len(sampled_copu
 print(len(sampled_tvae[sampled_tvae[target] == 0]) /len(sampled_tvae))
 
 
-# %%
+
 x_gauss = sampled_gaussain_copula.loc[:, sampled_gaussain_copula.columns != target]
 y_gauss = sampled_gaussain_copula[target]
 x_ctgan = sampled_ct_gan.loc[:, sampled_ct_gan.columns != target]
