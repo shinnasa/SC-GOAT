@@ -128,7 +128,7 @@ if len(arguments) > 2:
 
     method_name = arguments[2]
     encode = eval(arguments[3]) # either categotical or target
-    optimization_itr = 1
+    optimization_itr = 350
     short_epoch = False
 else:
     data_set_name = 'adult'

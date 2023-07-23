@@ -485,22 +485,22 @@ for column in x_test.columns:
         x_test[column] = x_test[column].astype('category')
 dtest = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
 
-clf_auc_test_gaussain_copula = 0
+clf_auc_test_gaussain_copula = 0.5
 if clf_gaussain_copula != None:
     clf_probs_test_gaussain_copula = clf_gaussain_copula.predict(dtest)
     clf_auc_test_gaussain_copula = roc_auc_score(y_test.astype(float), clf_probs_test_gaussain_copula)
 
-clf_auc_test_ct_gan = 0
+clf_auc_test_ct_gan = 0.5
 if clf_ct_gan != None:
     clf_probs_test_ct_gan = clf_ct_gan.predict(dtest)
     clf_auc_test_ct_gan = roc_auc_score(y_test.astype(float), clf_probs_test_ct_gan)
 
-clf_auc_test_copula_gan = 0
+clf_auc_test_copula_gan = 0.5
 if clf_copula_gan != None:
     clf_probs_test_copula_gan = clf_copula_gan.predict(dtest)
     clf_auc_test_copula_gan = roc_auc_score(y_test.astype(float), clf_probs_test_copula_gan)
 
-clf_auc_test_tvae = 0
+clf_auc_test_tvae = 0.5
 if clf_tvae != None:
     clf_probs_test_tvae = clf_tvae.predict(dtest)
     clf_auc_test_tvae = roc_auc_score(y_test.astype(float), clf_probs_test_tvae)

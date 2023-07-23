@@ -18,14 +18,14 @@ python3 code/OptimizationApproach_XGBoost.py adult 150 True False False
 # Tuned
 # Without Target Encoder
 # Adult Data Set
-python3 code/OptimizationApproach_XGBoost.py adult 150 False False True
+python3 code/OptimizationApproach_XGBoost.py adult 3000 False False True
 
 # # Unbalanced Credit Card Data Set (need files)
-python3 code/OptimizationApproach_XGBoost.py credit_card 150 False False True
+python3 code/OptimizationApproach_XGBoost.py credit_card 3000 False False True
 
 # # Balanced Credit Card Data Set
-python3 code/OptimizationApproach_XGBoost.py credit_card 150 False True True
+python3 code/OptimizationApproach_XGBoost.py credit_card 3000 False True True
 
 # With Target Encoder 
 # Adult Data Set (need files)
-python3 code/OptimizationApproach_XGBoost.py adult 150 True False True
+python3 code/OptimizationApproach_XGBoost.py adult 3000 True False True

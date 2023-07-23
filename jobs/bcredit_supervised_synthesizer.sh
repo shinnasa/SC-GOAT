@@ -10,6 +10,11 @@
 module load miniconda
 conda activate sdv
 
-python code/SupervisedSynthesizer.py balanced_credit_card $1 False False
+python code/SupervisedSynthesizer.py balanced_credit_card CTGAN False False
+python code/SupervisedSynthesizer.py balanced_credit_card CopulaGAN False False
+python code/SupervisedSynthesizer.py balanced_credit_card TVAE False False
+python code/SupervisedSynthesizer.py balanced_credit_card GaussianCopula False False
+
+# python code/SupervisedSynthesizer.py balanced_credit_card $1 False False
 
 echo "Done"
