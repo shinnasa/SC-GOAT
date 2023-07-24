@@ -207,7 +207,7 @@ y_tvae = sampled_tvae[target]
 
 
 def getParams(augment_data_percentage:float):
-    print('----augment_data_percentage: ', augment_data_percentage)
+    # print('----augment_data_percentage: ', augment_data_percentage)
 
     if augment_data_percentage > 0:
         params_range = {
@@ -268,11 +268,13 @@ def objective_maximize_roc(params):
     # Scale the alphas so that their sum adds up to 1
     # alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4'], params['alpha_5']]
     alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4']]
-    alpha_modified = [alpha_temp[i] - min(alpha_temp) + 1e-3 for i in range(len(alpha_temp))]
-    scale = sum(alpha_modified)
+    # alpha_modified = [alpha_temp[i] - min(alpha_temp) + 1e-3 for i in range(len(alpha_temp))]
+    scale = sum(alpha_temp)
     # alpha = softmax(alpha_temp)
-    alpha = [(1 / scale) * alpha_modified[i] for i in range(len(alpha_modified))]
-    # alpha = [(1 / scale) * alpha_temp[i] for i in range(len(alpha_temp))]
+    # alpha = [(1 / scale) * alpha_modified[i] for i in range(len(alpha_modified))]
+    alpha = [(1 / scale) * alpha_temp[i] for i in range(len(alpha_temp))]
+    # print("Scaled alpha: ",alpha)
+    # print("Sum of alphas: ", sum(alpha))
     index = np.argmax(alpha)
     params['alpha_1'] = alpha[0]
     params['alpha_2'] = alpha[1]
@@ -334,7 +336,7 @@ def objective_maximize_roc(params):
     if params['val_roc'] > best_val_roc:
         best_val_roc = params['val_roc']
         train_roc = params['train_roc']
-        best_params = alpha
+        best_params = params
         best_X_synthetic = X_synthetic
         best_y_synthetic = y_synthetic
         best_classifier_model = clf
@@ -371,7 +373,7 @@ def trainDT(max_evals:int):
     trials = generate_trials_to_calculate([initial_alphas_dict])
     start_time_BO = time.time()
     params_range = getParams(augment_data_percentage)
-    print('getParams: ', getParams(augment_data_percentage))
+    # print('getParams: ', getParams(augment_data_percentage))
     clf_best_param = fmin(fn=objective_maximize_roc,
                     space=params_range,
                     max_evals=max_evals,
@@ -382,7 +384,7 @@ def trainDT(max_evals:int):
     print('clf_best_param: ', clf_best_param)
     end_time_BO = time.time()
     total_time_BO = end_time_BO - start_time_BO
-    return best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, clf_best_param, output, total_time_BO, best_classifier_model
+    return best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, best_params, output, total_time_BO, best_classifier_model
 
 print("==========Executing Baseyan Optimization==========")
 
@@ -408,8 +410,8 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
     if data_set_name == 'adult':
         target = 'income'
         synthetic_data[target] = best_y_synthetic
-        synthetic_data.loc[synthetic_data[target] == True, target] = " <=50K"
-        synthetic_data.loc[synthetic_data[target] == False, target] = " >50K"
+        synthetic_data.loc[synthetic_data[target] == False, target] = " <=50K"
+        synthetic_data.loc[synthetic_data[target] == True, target] = " >50K"
         synthetic_data.to_csv(outpath + prefix + data_set_name + str_tuned + "_models_synthetic_data_xgboost.csv", index=False)
     elif data_set_name == 'credit_card':
         target = 'Class'
@@ -440,6 +442,10 @@ clf_best_param["test_roc"] = test_roc
 clf_best_param["total_time_BO"] = total_time_BO
 
 print('clf_best_param: ', clf_best_param)
+
+alpha_temp = [clf_best_param['alpha_1'], clf_best_param['alpha_2'], clf_best_param['alpha_3'], clf_best_param['alpha_4']]
+print('abs(sum(alpha_temp) - 1) : ', abs(sum(alpha_temp) - 1))
+assert abs(sum(alpha_temp) - 1) < 0.001
 
 str_tuned ='_untuned'
 if tuned:

@@ -107,7 +107,7 @@ params_xgb = {
         'eval_metric' : 'auc',
         'objective' : 'binary:logistic',
         'seed': 5,
-        'base_score' :  len(df_train[df_train[target] == 1]) / len(df_train)
+        # 'base_score' :  len(df_train[df_train[target] == 1]) / len(df_train)
 }
 
 print('params_xgb: ', params_xgb)
