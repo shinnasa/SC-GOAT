@@ -358,8 +358,10 @@ def objective_maximize_roc(params):
     clf_probs = clf.predict(dval)
     clf_auc = roc_auc_score(y_val_real.astype(float), clf_probs)
     
-    clf_probs_train = clf.predict(dtrain)
-    clf_auc_train = roc_auc_score(y_new.astype(float), clf_probs_train)
+    clf_auc_train = 0.5
+    if (sum(y_new) / len(y_new) > 0) & (sum(y_new) / len(y_new) < 1):
+        clf_probs_train = clf.predict(dtrain)
+        clf_auc_train = roc_auc_score(y_new.astype(float), clf_probs_train)
     params['train_roc']        = clf_auc_train
     params['val_roc']        = clf_auc
 
@@ -519,6 +521,8 @@ for experiment in range(number_experiments):
 
     method = "GaussianCopula"
     params_ = utilities.get_init_params(method)
+    if tuned:
+        params_ = utilities.get_tuned_params(method, data_set_name, outpath)
     synth_GaussianCopula = utilities.fit_synth(df_train, params_)
     synth_GaussianCopula.fit(df_train)
 
@@ -543,6 +547,8 @@ for experiment in range(number_experiments):
     print("==========Executing CTGAN==========")
     method = "CTGAN"
     params_ = utilities.get_init_params(method)
+    if tuned:
+        params_ = utilities.get_tuned_params(method, data_set_name, outpath)
     synth_CTGAN = utilities.fit_synth(df_train, params_)
     synth_CTGAN.fit(df_train)
 
@@ -552,6 +558,8 @@ for experiment in range(number_experiments):
     print("==========Executing CopulaGAN==========")
     method = "CopulaGAN"
     params_ = utilities.get_init_params(method)
+    if tuned:
+        params_ = utilities.get_tuned_params(method, data_set_name, outpath)
     synth_CopulaGAN = utilities.fit_synth(df_train, params_)
     synth_CopulaGAN.fit(df_train)
 
@@ -561,6 +569,8 @@ for experiment in range(number_experiments):
     print("==========Executing TVAE==========")
     method = "TVAE"
     params_ = utilities.get_init_params(method)
+    if tuned:
+        params_ = utilities.get_tuned_params(method, data_set_name, outpath)
     synth_TVAE = utilities.fit_synth(df_train, params_)
     synth_TVAE.fit(df_train)
 
