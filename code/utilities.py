@@ -289,8 +289,8 @@ def getparams(method_name):
         'd_dim1':  hp.randint('d_dim1',1, 3), # multiple of 128
         'd_dim2':  hp.randint('d_dim2',1, 2), # multiple of 128
         'd_dim3':  hp.randint('d_dim3',0, 1), # multiple of 128
-        'd_lr': hp.uniform('d_lr', 5e-5, 1e-2),
-        "g_lr": hp.uniform('g_lr', 5e-5, 1e-2),
+        'd_lr': 2e-4, #hp.uniform('d_lr', 5e-5, 1e-2),
+        "g_lr": 2e-4, #hp.uniform('g_lr', 5e-5, 1e-2),
         } 
         return params_range
     elif method_name == "CopulaGAN":
@@ -384,3 +384,12 @@ def get_init_params(method_name):
         'd_dim3':  0,
         } 
         return params
+
+def get_tuned_params(method_name, outpath):
+    fname = outpath + data_set_name + "_" + method_name + "_clf_best_hp_xgboost.csv"
+    dfp = pd.read_csv(fname, index_col=0)
+    params = dfp['Value'].to_dict()
+    # Keys to remove
+    keys_to_remove = ['tuned_val_roc', 'untuned_val_roc', 'tuned_test_roc', 'untuned_test_roc', 'elapsed_time']
+    params = {key: value for key, value in params.items() if key not in keys_to_remove}
+    return params
