@@ -221,11 +221,11 @@ def fit_synth(df, params):
         if method == "CTGAN":
             synth = CTGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim, 
                                      discriminator_dim=discriminator_dim, generator_lr=generator_lr, 
-                                     discriminator_lr=discriminator_lr, verbose=True)
+                                     discriminator_lr=discriminator_lr, verbose=False)
         if method == "CopulaGAN":
             synth = CopulaGANSynthesizer(metadata=metadata, epochs=epoch, batch_size=batch_size, generator_dim=generator_dim,
                                          discriminator_dim=discriminator_dim, generator_lr=generator_lr,
-                                         discriminator_lr=discriminator_lr, verbose=True)
+                                         discriminator_lr=discriminator_lr, verbose=False)
     elif method == "TVAE":
         epoch = params['epochs']
         batch_size = params['batch_size']*100
