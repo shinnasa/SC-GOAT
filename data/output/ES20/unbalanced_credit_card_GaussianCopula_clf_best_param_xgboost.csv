@@ -1,0 +1,6 @@
+,Value
+tuned_val_roc,0.9999248496993988
+untuned_val_roc,0.9999248496993988
+tuned_test_roc,0.8837562437562437
+untuned_test_roc,0.8837562437562437
+elapsed_time,60.83228850364685

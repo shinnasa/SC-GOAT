@@ -1,0 +1,17 @@
+,Value
+N_sim,10000
+loss,ROCAUC
+method,TVAE
+epochs,150
+batch_size,5
+c_dim1,2
+c_dim2,2
+c_dim3,0
+d_dim1,2
+d_dim2,2
+d_dim3,0
+tuned_val_roc,0.9849505727498254
+untuned_val_roc,0.9849505727498254
+tuned_test_roc,0.986016496372025
+untuned_test_roc,0.986016496372025
+elapsed_time,3104.4914746284485

@@ -24,7 +24,9 @@ import warnings
 warnings.simplefilter("ignore")
 
 
-# Defines objective function for the Bayesian optimizer
+##################################################################################################
+# Define functions for Bayesian Optimization
+##################################################################################################
 def objective_maximize(params):
     global clf_auc_history
     global best_val_roc 
@@ -32,6 +34,7 @@ def objective_maximize(params):
     global first_val_roc
     global first_synth
     global params_range
+    global best_hp
     N_sim = params["N_sim"]
     if short_epoch:
         params['epochs'] = 1
@@ -57,10 +60,10 @@ def objective_maximize(params):
     clf_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
     print(clf_auc)
     
-    
     if clf_auc > best_val_roc:
         best_val_roc = clf_auc
         best_synth = sampled
+        best_hp = params
     if clf_auc_history.size == 0:
         output_ = {'val_roc' : [clf_auc]}
         clf_auc_history = pd.DataFrame.from_dict(output_)
@@ -85,6 +88,7 @@ def trainDT(max_evals:int, method_name):
     global first_synth
     global clf_auc_history
     global params_range
+    global best_hp
     if method_name == "GaussianCopula":
         params = get_init_params(method_name)
         N_sim = params["N_sim"]
@@ -97,7 +101,7 @@ def trainDT(max_evals:int, method_name):
         else:
             best_synth = synth.sample(num_rows = N_sim)
         best_val_roc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
-        return best_val_roc, best_synth, {}, pd.DataFrame.from_dict({}), best_val_roc, best_synth
+        return best_val_roc, best_synth, {}, pd.DataFrame.from_dict({}), best_val_roc, best_synth, {}
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
     best_val_roc = 0
@@ -108,15 +112,17 @@ def trainDT(max_evals:int, method_name):
                     space=params_range,
                     max_evals=max_evals,
                     # rstate=np.random.default_rng(42),
-                    early_stop_fn=no_progress_loss(20),
+                    early_stop_fn=no_progress_loss(10),
                     algo=tpe.suggest,
                     trials=trials)
     print(clf_best_param)
     print(best_val_roc)
     print('It takes %s minutes' % ((time.time() - start)/60))
-    return best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc,first_synth
+    return best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc, first_synth, best_hp
 
-# Load data and create train test split from the smaller dataset that contains 10% of the full data
+##################################################################################################
+# Get user defined arguments
+##################################################################################################
 arguments = sys.argv
 print("arguments: ", arguments)
 # assert len(arguments) > 3
@@ -131,8 +137,8 @@ if len(arguments) > 2:
     optimization_itr = 350
     short_epoch = False
 else:
-    data_set_name = 'adult'
-    method_name = 'TVAE'
+    data_set_name = 'balanced_credit_card'
+    method_name = 'GaussianCopula'
     optimization_itr = 1
     if data_set_name == 'adult':
         target = 'income'
@@ -150,6 +156,9 @@ else:
 if os.path.exists("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"):
     raise FileExistsError("This results already exists. Skipping to the next")
 
+##################################################################################################
+# Load data
+##################################################################################################
 df_original = load_data(data_set_name)
 
 df = df_original.copy()
@@ -162,8 +171,12 @@ if not encode:
     df_val.to_csv('data/input/' + m_name  + '_validation.csv')
     df_test.to_csv('data/input/' + m_name + '_test.csv')
 
+##################################################################################################
+# Run Bayesian Optimization
+##################################################################################################
 start_time = time.time()
-best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc, first_synth = trainDT(max_evals=optimization_itr, method_name=method_name)
+best_val_roc, best_synth, clf_best_param, clf_auc_history, first_val_roc, first_synth, best_hp = trainDT(max_evals=optimization_itr, method_name=method_name)
+print("best_hp: ", best_hp)
 elapsed_time = time.time() - start_time
 
 if encode:
@@ -178,7 +191,9 @@ if encode:
 test_auc_best = downstream_loss(best_synth, df_test, target, classifier = "XGB")
 test_auc_first = downstream_loss(first_synth, df_test, target, classifier = "XGB")
 
-# Save data
+##################################################################################################
+# Save Results
+##################################################################################################
 clf_best_param["tuned_val_roc"] = best_val_roc
 clf_best_param["untuned_val_roc"] = first_val_roc
 clf_best_param["tuned_test_roc"] = test_auc_best
@@ -186,6 +201,10 @@ clf_best_param["untuned_test_roc"] = test_auc_first
 clf_best_param["elapsed_time"] = elapsed_time
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
 df_bparam.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv")
+
+df_bhp = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
+df_bhp.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_hp_xgboost.csv")
+
 best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
 first_synth.to_csv("data/output/" + m_name + "_untuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
 clf_auc_history.to_csv("data/history/" + m_name + "_" + method_name + "_history_auc_score_xgboost.csv")

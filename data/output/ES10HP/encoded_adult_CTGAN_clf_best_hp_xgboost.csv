@@ -1,0 +1,13 @@
+,Value
+batch_size,2.0
+d_dim1,1.0
+d_dim2,1.0
+d_dim3,0.0
+g_dim1,2.0
+g_dim2,1.0
+g_dim3,0.0
+tuned_val_roc,0.8690907611392384
+untuned_val_roc,0.820882349157092
+tuned_test_roc,0.8335664362918311
+untuned_test_roc,0.7511676366659739
+elapsed_time,12412.229694366455

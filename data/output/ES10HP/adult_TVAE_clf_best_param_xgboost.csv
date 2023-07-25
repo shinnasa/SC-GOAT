@@ -1,0 +1,12 @@
+,Value
+c_dim1,2.0
+c_dim2,1.0
+c_dim3,0.0
+d_dim1,2.0
+d_dim2,1.0
+d_dim3,0.0
+tuned_val_roc,0.8429880982587681
+untuned_val_roc,0.8274597685705484
+tuned_test_roc,0.8546661297027646
+untuned_test_roc,0.8487371388484724
+elapsed_time,1775.7116017341614
