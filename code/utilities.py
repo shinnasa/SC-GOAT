@@ -385,7 +385,7 @@ def get_init_params(method_name):
         } 
         return params
 
-def get_tuned_params(method_name, outpath):
+def get_tuned_params(method_name, data_set_name,outpath):
     fname = outpath + data_set_name + "_" + method_name + "_clf_best_hp_xgboost.csv"
     dfp = pd.read_csv(fname, index_col=0)
     params = dfp['Value'].to_dict()
