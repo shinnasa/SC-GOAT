@@ -21,6 +21,9 @@ import warnings
 random.seed(5)
 warnings.filterwarnings('ignore')
 
+################################################################################################
+# Get user defined values
+################################################################################################
 arguments = sys.argv
 print('arguments: ', arguments)
 print(os.getcwd())
@@ -80,13 +83,14 @@ print('augment_data: ', augment_data)
 print('augment_data_percentage: ', augment_data_percentage)
 print('prefix: ', prefix)
 
+################################################################################################
+# Load data
+################################################################################################
 df_original = utilities.load_data_original(data_set_name, balanced)
-
 
 df = df_original.copy()
 if len(df) > 50000:
     df = df.sample(50000, replace = False)
-
 
 categorical_columns = []
 
@@ -96,10 +100,13 @@ for column in df.columns:
 
 initial_columns_ordering = df.columns.values
 
+
+################################################################################################
+# Define functions. These will be moved to utilities.py eventually
+################################################################################################
 def get_train_validation_test_data(df, encode):
     df_train_original, df_test_original = train_test_split(df, test_size = 0.3) #70% is training and 30 to test
     df_val_original, df_test_original = train_test_split(df_test_original, test_size = 1 - 0.666)# out of 30, 20 is test and 10 for validation
-
     if encode:
         # HERE ENCODING HAPPENS FOR ONLY FOR SYNTHESIZERS
         df_train = encoder.transform(df_train_original)
@@ -464,6 +471,11 @@ def save_synthetic_data(data_set_name:str, best_X_synthetic, best_y_synthetic, b
 # HERE ENCODING HAPPENS FOR BOTH XGBOOST AND SYNTHESIZERS
 # if encode:
 #     best_X_synthetic = encoder.inverse_transform(best_X_synthetic)[initial_columns_ordering]
+
+
+################################################################################################
+# Start experiments
+################################################################################################
 
 number_experiments = 10
 str_tuned ='_untuned'

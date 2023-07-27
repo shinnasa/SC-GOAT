@@ -9,7 +9,8 @@
 
 module load miniconda
 conda activate sdv
-# Dataset and iterations
-python CTAB-GAN-Plus/CreateResultCTabGANPlus.py $1
+# data, opt_itr, encode, balanced, experiment
+python code/Run_Experiments.py adult 150 True False $1
+
 
 echo "Done"
