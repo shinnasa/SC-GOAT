@@ -75,7 +75,7 @@ if data_set_name == 'credit_card':
 if encode:
     prefix =  "encoded_" + prefix 
 
-outpath = "data/output/ES10HP/"
+outpath = "data/output/ES10HP2/"
 outpath_data_augmentation = "data/outputDataAugmentation/"
 historypath_data_augmentation = "data/historyDataAugmentation/"
 
@@ -283,8 +283,7 @@ params_xgb = {
     }
 lmethods = ["GaussianCopula", "CTGAN", "CopulaGAN", "TVAE"]
 
-lsyn_u = []
-lsyn_t = []
+
 lres = []
 X_temp_u = []
 X_temp_t = []
