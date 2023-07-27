@@ -1,0 +1,17 @@
+,data,method,untuned:class0,untuned:class1,tuned:class0,tuned:class1
+4,adult,CTGAN,0.8366,0.1634,0.7715,0.2285
+8,adult,CopulaGAN,0.804,0.196,0.8214,0.1786
+0,adult,GaussianCopula,0.7496,0.2504,0.7496,0.2504
+12,adult,TVAE,0.7644,0.2356,0.7763,0.2237
+5,balanced_credit_card,CTGAN,0.6833,0.3167,0.6373,0.3627
+9,balanced_credit_card,CopulaGAN,0.7007,0.2993,0.6366,0.3634
+1,balanced_credit_card,GaussianCopula,0.9197,0.0803,0.9197,0.0803
+13,balanced_credit_card,TVAE,0.639,0.361,0.639,0.361
+7,encoded_adult,CTGAN,0.6863,0.3137,0.7745,0.2255
+11,encoded_adult,CopulaGAN,0.9429,0.0571,0.8036,0.1964
+3,encoded_adult,GaussianCopula,0.7485,0.2515,0.7485,0.2515
+15,encoded_adult,TVAE,0.787,0.213,0.7632,0.2368
+6,unbalanced_credit_card,CTGAN,1.0,0.0,1.0,0.0
+10,unbalanced_credit_card,CopulaGAN,0.0,1.0,0.0,1.0
+2,unbalanced_credit_card,GaussianCopula,0.9982,0.0018,0.9982,0.0018
+14,unbalanced_credit_card,TVAE,1.0,0.0,1.0,0.0
