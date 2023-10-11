@@ -38,22 +38,6 @@ def objective_maximize(params):
     N_sim = params["N_sim"]
     if short_epoch:
         params['epochs'] = 1
-    # if data_set_name == 'unbalanced_credit_card':
-    #     df1 = df_train.loc[df_train[target] == 1]
-    #     df0 = df_train.loc[df_train[target] == 0]
-    #     synth1 = fit_synth(df_train, params)
-    #     synth0 = fit_synth(df_train, params)
-    #     synth1.fit(df1)
-    #     synth0.fit(df0)
-        
-    #     num_rows1 = round(N_sim*df[target].mean())
-    #     sampled1 = synth1.sample(num_rows = num_rows1)
-    #     sampled0 = synth0.sample(num_rows = N_sim - num_rows1)
-    #     sampled = pd.concat([sampled1, sampled0], ignore_index=True)
-    # else:
-    #     synth = fit_synth(df_train, params)
-    #     synth.fit(df_train)
-    #     sampled = synth.sample(num_rows = N_sim)
     synth = fit_synth(df_train, params)
     synth.fit(df_train)
     sampled = synth.sample(num_rows = N_sim)
@@ -138,8 +122,9 @@ if len(arguments) > 2:
     short_epoch = False
 else:
     data_set_name = 'balanced_credit_card'
+    data_set_name = 'adult'
     method_name = 'GaussianCopula'
-    optimization_itr = 1
+    optimization_itr = 350
     if data_set_name == 'adult':
         target = 'income'
     else:

@@ -53,6 +53,7 @@ if len(arguments) > 2:
         assert 0 <= augment_data_percentage <= 1
 else:
     data_set_name = 'credit_card'
+    data_set_name = 'adult'
     optimization_itr = 100
     encode = False
     balanced = False
@@ -131,15 +132,9 @@ def objective_maximize_roc(params):
     global y_temp
     # Scale the alphas so that their sum adds up to 1
     alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4'], params['alpha_5']]
-    # alpha_temp = [params['alpha_1'], params['alpha_2'], params['alpha_3'], params['alpha_4']]
-    # alpha_modified = [alpha_temp[i] - min(alpha_temp) + 1e-3 for i in range(len(alpha_temp))]
     scale = (sum(alpha_temp)-augment_data_percentage)  / (1 - augment_data_percentage)
-    # alpha = softmax(alpha_temp)
-    # alpha = [(1 / scale) * alpha_modified[i] for i in range(len(alpha_modified))]
     alpha = [(1 / scale) * alpha_temp[i] for i in range(len(alpha_temp) - 1)]
     alpha.append(augment_data_percentage)
-    # print("Scaled alpha: ",alpha)
-    # print("Sum of alphas: ", sum(alpha))
     index = np.argmax(alpha)
     params['alpha_1'] = alpha[0]
     params['alpha_2'] = alpha[1]
@@ -228,24 +223,48 @@ def trainDT(max_evals:int, X_temp_arg, y_temp_arg, val_auc_arg):
     train_roc = 0
     best_params = []
     initial_alphas = computeInitialAlphaForWarmStart(augment_data_percentage, val_auc)
-    initial_alphas_dict = {'alpha_1' : initial_alphas[0], 
+    initial_alphas_dict_auc = {'alpha_1' : initial_alphas[0], 
                            'alpha_2' : initial_alphas[1], 
                            'alpha_3' : initial_alphas[2] ,
                            'alpha_4' : initial_alphas[3], 
                            'alpha_5' : augment_data_percentage
                            }
-    trials = generate_trials_to_calculate([initial_alphas_dict])
+    trials = generate_trials_to_calculate([initial_alphas_dict_auc])
     start_time_BO = time.time()
     params_range = get_alpha_Params(augment_data_percentage)
     # print('getParams: ', getParams(augment_data_percentage))
+
+    #GET the starting params value including the corner solutions
+    clf_best_param_initialization = fmin(fn=objective_maximize_roc,
+                    space=params_range,
+                    max_evals=1,
+                    algo=tpe.suggest,
+                    trials=trials)
+    initial_alphas_dict = {}
+    print('clf_best_param_initialization: ', clf_best_param_initialization)
+    print('best_val_roc: ', best_val_roc)
+    print('val_auc_arg: ', val_auc_arg)
+    if best_val_roc > max(val_auc_arg):
+        initial_alphas_dict = initial_alphas_dict_auc
+    else:
+        i = np.argmax(val_auc_arg)
+        print('i: ', i)
+        initial_alphas = [0 for i in range(len(initial_alphas))]
+        initial_alphas[i] = 1
+        initial_alphas_dict = {'alpha_1' : initial_alphas[0], 
+                           'alpha_2' : initial_alphas[1], 
+                           'alpha_3' : initial_alphas[2] ,
+                           'alpha_4' : initial_alphas[3], 
+                           'alpha_5' : augment_data_percentage
+                           }
+    print('initial_alphas_dict: ', initial_alphas_dict)
+
     clf_best_param = fmin(fn=objective_maximize_roc,
                     space=params_range,
                     max_evals=max_evals,
-                # rstate=np.random.default_rng(42),
                     algo=tpe.suggest,
                     trials=trials)
-    # print('best_params: ', best_params)
-    # print('clf_best_param: ', clf_best_param)
+
     end_time_BO = time.time()
     total_time_BO = end_time_BO - start_time_BO
     return best_val_roc, train_roc, best_params, best_X_synthetic, best_y_synthetic, best_params, output, total_time_BO, best_classifier_model
@@ -333,6 +352,7 @@ for method_name in lmethods:
         sampled_u = syn_u.sample_from_conditions(conditions=[class0, class1], output_file_path="data/temp/untuned_" + prefix + data_set_name + "_"+ str(experiment) + ".csv")
         sampled_t = syn_t.sample_from_conditions(conditions=[class0, class1], output_file_path="data/temp/tuned_" + prefix + data_set_name + "_"+ str(experiment) + ".csv")
     else:
+        print("data/temp/untuned_" + prefix + data_set_name + "_"+ str(experiment) + ".csv")
         sampled_u = syn_u.sample(N_sim, output_file_path="data/temp/untuned_" + prefix + data_set_name + "_"+ str(experiment) + ".csv")
         sampled_t = syn_t.sample(N_sim, output_file_path='data/temp/tuned_' + prefix + data_set_name + "_"+ str(experiment) + ".csv")
     os.remove("data/temp/untuned_" + prefix + data_set_name + "_"+ str(experiment) + ".csv")
