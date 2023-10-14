@@ -258,6 +258,8 @@ def trainDT(max_evals:int, X_temp_arg, y_temp_arg, val_auc_arg):
                            'alpha_5' : augment_data_percentage
                            }
     print('initial_alphas_dict: ', initial_alphas_dict)
+    
+    trials = generate_trials_to_calculate([initial_alphas_dict])
 
     clf_best_param = fmin(fn=objective_maximize_roc,
                     space=params_range,
