@@ -277,6 +277,7 @@ def trainDT(max_evals:int, X_temp_arg, y_temp_arg, val_auc_arg):
     clf_best_param = fmin(fn=objective_maximize_roc,
                     space=params_range,
                     max_evals=max_evals,
+                    early_stop_fn=no_progress_loss(1, 5),
                     algo=tpe.suggest,
                     trials=trials)
 
