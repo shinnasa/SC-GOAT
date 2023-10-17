@@ -259,6 +259,19 @@ def trainDT(max_evals:int, X_temp_arg, y_temp_arg, val_auc_arg):
                            }
     print('initial_alphas_dict: ', initial_alphas_dict)
     
+    output = pd.DataFrame()
+    train_roc = 0
+    best_val_roc = 0
+    best_params = []
+    global best_X_synthetic
+    global best_y_synthetic
+    global best_classifier_model
+    X_temp = X_temp_arg
+    y_temp = y_temp_arg
+    val_auc = val_auc_arg
+    best_val_roc = 0
+    train_roc = 0
+
     trials = generate_trials_to_calculate([initial_alphas_dict])
 
     clf_best_param = fmin(fn=objective_maximize_roc,
