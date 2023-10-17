@@ -421,10 +421,10 @@ clf_best_param_u["untuned_val_roc"] = best_val_roc_u
 clf_best_param_u["untuned_test_roc"] = test_roc_u
 clf_best_param_u["untuned_total_time_BO"] = total_time_BO_u
 
-clf_best_param_t["untuned_train_roc"] = train_roc_t
-clf_best_param_t["untuned_val_roc"] = best_val_roc_t
-clf_best_param_t["untuned_test_roc"] = test_roc_t
-clf_best_param_t["untuned_total_time_BO"] = total_time_BO_t
+clf_best_param_t["tuned_train_roc"] = train_roc_t
+clf_best_param_t["tuned_val_roc"] = best_val_roc_t
+clf_best_param_t["tuned_test_roc"] = test_roc_t
+clf_best_param_t["tuned_total_time_BO"] = total_time_BO_t
 
 clf_best_param_df_u = pd.DataFrame()
 clf_best_param_df_u = clf_best_param_df_u._append(clf_best_param_u, ignore_index = True)
