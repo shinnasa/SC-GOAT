@@ -204,7 +204,7 @@ def fit_synth(df, params):
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(data=df)
     method = params['method']
-    print(params, method)
+    # print(params, method)
     if method == "GaussianCopula":
         synth = GaussianCopulaSynthesizer(metadata=metadata)
     elif method == "CTGAN" or method =="CopulaGAN":
@@ -263,7 +263,7 @@ def downstream_loss(sampled, df_val, target, classifier = "XGB"):
         clf = xgb.train(params_xgb, dtrain, 1000, verbose_eval=False)
         clf_probs = clf.predict(dval)
         clf_auc = roc_auc_score(y_val.values.astype(float), clf_probs)
-        return clf_auc
+        return clf, clf_auc
     else:
         raise ValueError("Invalid classifier: " + classifier)
         
