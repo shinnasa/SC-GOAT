@@ -53,7 +53,7 @@ if len(arguments) > 2:
         assert 0 <= augment_data_percentage <= 1
 else:
     data_set_name = 'credit_card'
-    # data_set_name = 'adult'
+    data_set_name = 'adult'
     optimization_itr = 100
     encode = False
     balanced = False
@@ -142,7 +142,6 @@ def objective_maximize_roc(params):
     params['alpha_3'] = alpha[2]
     params['alpha_4'] = alpha[3]
     params['alpha_5'] = alpha[4]
-    print('-----------params: ', params)
     # Randomly select the data from each source
     x_val_real = x_val.copy()
     y_val_real = y_val.copy()
@@ -151,7 +150,6 @@ def objective_maximize_roc(params):
 
     size = [int(alpha[i] * len(y_temp[i].index.values)) for i in range(len(alpha))]
     size[index] += (generated_data_size - sum(size))
-    print('-----------size: ', size)
     randomRows = random.sample(list(y_temp[0].index.values), size[0])
     randomRows = np.sort(randomRows)
     X_new = X_temp[0].loc[randomRows]
@@ -160,11 +158,8 @@ def objective_maximize_roc(params):
     for i in range(1, len(y_temp)):
         n = size[i]
         if n > 0:
-            print('i: ', i)
-            # print('X_temp[i]: ', X_temp[i][0:2])
             randomRows = random.sample(list(y_temp[i].index.values), n)
             randomRows = np.sort(randomRows)
-            # print('randomRows: ', randomRows)
             X_new = pd.concat([X_new, X_temp[i].loc[randomRows]])
             y_new = np.concatenate((y_new, y_temp[i].loc[randomRows].values))
 
@@ -177,7 +172,7 @@ def objective_maximize_roc(params):
             X_new[column] = X_new[column].astype('category')
             x_val_real[column] = x_val_real[column].astype('category')
     dtrain = xgb.DMatrix(data=X_new, label=y_new, enable_categorical=True)
-    dval = xgb.DMatrix(data=x_val_real, label=y_val_real, enable_categorical=True)
+    # dval = xgb.DMatrix(data=x_val_real, label=y_val_real, enable_categorical=True)
     # clf = xgb.train(params = params_xgb, dtrain=dtrain, verbose_eval=False)
 
     data_temp_train = X_synthetic.copy()
@@ -198,10 +193,6 @@ def objective_maximize_roc(params):
     params['val_roc']        = clf_auc
 
     output = output._append(params, ignore_index = True)
-    print("==============")
-    print(" params['val_roc']: ",  params['val_roc'])
-    print(" best_val_roc: ",  best_val_roc)
-    print("==============")
     # Update best record of the loss function and the alpha values based on the optimization
     if params['val_roc'] > best_val_roc:
         best_val_roc = params['val_roc']
@@ -296,12 +287,8 @@ def trainDT(max_evals:int, X_temp_arg, y_temp_arg, val_auc_arg):
                     early_stop_fn=no_progress_loss(1, 5),
                     algo=tpe.suggest,
                     trials=trials)
-
-    print('best_params: ', best_params)
+    
     print('best_val_roc: ', best_val_roc)
-    print('best_val_loss: ', 1 - best_val_roc)
-    print('train_roc: ', train_roc)
-    print('train_loss: ', 1 - train_roc)
 
     end_time_BO = time.time()
     total_time_BO = end_time_BO - start_time_BO
@@ -402,11 +389,6 @@ for method_name in lmethods:
     clf_, val_loss_t = downstream_loss(sampled_t, df_val, target)
     clf_, test_loss_u = downstream_loss(sampled_u, df_test, target)
     clf_, test_loss_t = downstream_loss(sampled_t, df_test, target)
-    print('method name: ', method_name)
-    print('val_loss_u: ', val_loss_u)
-    print('val_loss_t: ', val_loss_t)
-    print('test_loss_u: ', test_loss_u)
-    print('test_loss_t: ', test_loss_t)
     lrow = [data_set_name, method_name, val_loss_u, val_loss_t, test_loss_u, test_loss_t]
     lres.append(lrow)
     X_temp_u.append(sampled_u.loc[:, sampled_u.columns != target])
