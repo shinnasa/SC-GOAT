@@ -4,7 +4,23 @@ This is the implementation of a **s**upervised and **g**eneartive **o**ptimizati
 The framework integrates a supervised component tailored to the specific downstream task and employs a meta-learning approach to learn the optimal mixture distribution of existing synthetic distributions.
 
 ## One-time setup
-TODO Include a script to install all the required packages automatically.
+Create python virtual environment scgoat_env:
+
+```console
+python -m venv scgoat_env
+```
+
+Activate python virtual environment scgoat_env: 
+
+```console
+source scgoat_env/bin/activate  
+```
+
+Install required python packages:
+
+```console
+python -m pip install -r requirements.txt
+```
 
 ## Running
 ### Supervised Synthesizers
