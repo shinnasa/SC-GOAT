@@ -53,7 +53,7 @@ def objective_maximize(params):
     synth = fit_synth(df_train, params)
     synth.fit(df_train)
     sampled = synth.sample(num_rows = N_sim)
-    clf_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
+    clf, clf_auc = downstream_loss(sampled, df_val, target, classifier = "XGB")
     print(clf_auc)
     
     if clf_auc > best_val_roc:
@@ -96,7 +96,7 @@ def trainDT(max_evals:int, method_name):
             best_synth = synth.sample_from_conditions(conditions=[class1,  class0])
         else:
             best_synth = synth.sample(num_rows = N_sim)
-        best_val_roc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
+        clf, best_val_roc = downstream_loss(best_synth, df_val, target, classifier = "XGB")
         return best_val_roc, best_synth, {}, pd.DataFrame.from_dict({}), best_val_roc, best_synth, {}
     params_range = getparams(method_name)
     clf_auc_history = pd.DataFrame()
@@ -195,8 +195,8 @@ test_auc_first = downstream_loss(first_synth, df_test, target, classifier = "XGB
 ##################################################################################################
 # Save Results
 ##################################################################################################
-clf_best_param["tuned_val_roc"] = best_val_roc[1]
-clf_best_param["untuned_val_roc"] = first_val_roc[1]
+clf_best_param["tuned_val_roc"] = best_val_roc
+clf_best_param["untuned_val_roc"] = first_val_roc
 clf_best_param["tuned_test_roc"] = test_auc_best[1]
 clf_best_param["untuned_test_roc"] = test_auc_first[1]
 clf_best_param["elapsed_time"] = elapsed_time
