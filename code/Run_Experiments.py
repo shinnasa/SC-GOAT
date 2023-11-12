@@ -30,7 +30,6 @@ warnings.filterwarnings('ignore')
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--DATA_SET_NAME", help="DATA_SET_NAME can be ['adult', 'unbalanced_credit_card', 'balanced_credit_card']",  default='adult', choices=["adult", "unbalanced_credit_card", "balanced_credit_card"])
-parser.add_argument("-m", "--METHOD_NAME", help="METHOD_NAME can be ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE']", default="GaussianCopula", choices = ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE'])
 parser.add_argument("-e", "--ENCODE", help="ENCODE can be [True, False]", default="False", choices = ["True", "False"])
 parser.add_argument("-i", "--ITR", help="Number of Optimization Iterations", type=int, default=350)
 parser.add_argument("-g", "--GENERATED_DATA_SIZE", help="Number of Generated Data", type=int, default=10000)
@@ -44,7 +43,6 @@ args = parser.parse_args()
 ##################################################################################################
 print("arguments: ", args)
 data_set_name = args.DATA_SET_NAME
-method_name = args.METHOD_NAME
 encode = eval(args.ENCODE)
 optimization_itr = args.ITR
 shortrpoch = False

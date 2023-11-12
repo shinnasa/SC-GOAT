@@ -26,41 +26,49 @@ python -m pip install -r requirements.txt
 ### Supervised Synthesizers
 
 To test our method, first you need to generate synthetic data using the four generative methods, namely Gaussian Copula, CTGAN, Copula GAN, and TVAE, available from the Synthetic Data Vaul (SDV) python package, please use the script:
-```console
-python code/SupervisedSynthesizer.py DATA_SET_NAME METHOD_NAME ENCODE
-```
-DATA_SET_NAME can be ['adult', 'unbalanced_credit_card', 'balanced_credit_card']
-
-METHOD_NAME can be ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE']
-
-ENCODE can be [True, False]
-
-To generate the synthetic data using SC-GAOT, then please use the script:
 
 ```console
-python code/Run_Experiments.py DATA_SET_NAME ITR ENCODE BALANCED EXPERIMENT_ID 
+SupervisedSynthesizer.py
 ```
-DATA_SET_NAME can be ['adult', 'credit_card']
 
-ITR can be any positive integer
+To see the meaning of each argument:
 
-ENCODE can be [True, False]
-
-BALANCED can be [True, False]
-
-EXPERIMENT_ID can be any positive integer
-
+```console
+python code/SupervisedSynthesizer.py -h
+```
 
 Here is a simple example:
 
 ```console
-python code/SupervisedSynthesizer.py balanced_credit_card CopulaGAN False
-python code/SupervisedSynthesizer.py balanced_credit_card CTGAN False
-python code/SupervisedSynthesizer.py balanced_credit_card GaussianCopula False
-python code/SupervisedSynthesizer.py balanced_credit_card TVAE False
-python code/Run_Experiments.py credit_card 350 False True 1 
+python code/SupervisedSynthesizer.py -o data_test -i 300 -m TVAE -d adult -e False
 ```
 
-TODO Change the scripts to see the meaning of each argument.
+### SC-GOAT
 
-TODO Add argument for the output directory path.
+To generate the synthetic data using SC-GAOT, then please use the script:
+
+```console
+Run_Experiments.py
+```
+
+To see the meaning of each argument:
+
+```console
+python code/Run_Experiments.py-h 
+```
+
+Here is a simple example:
+
+```console
+python code/Run_Experiments.py -o data_test -i 300 -d adult -e False -g 10000 -id 1
+```
+
+### Instructions for for reproducing an experiment
+
+```console
+python code/SupervisedSynthesizer.py -o data_test -i 300 -m CopulaGAN -d adult -e False
+python code/SupervisedSynthesizer.py -o data_test -i 300 -m CTGAN -d adult -e False
+python code/SupervisedSynthesizer.py -o data_test -i 300 -m GaussianCopula -d adult -e False
+python code/SupervisedSynthesizer.py -o data_test -i 300 -m TVAE -d adult -e False
+python code/Run_Experiments.py -o data_test -i 300 -d adult -e False -g 10000 -id 1
+```
