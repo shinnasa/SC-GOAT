@@ -23,63 +23,70 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-################################################################################################
-# Get user defined values
-################################################################################################
-arguments = sys.argv
-print('arguments: x', arguments)
-print(os.getcwd())
+##################################################################################################
+# Define arguments for the python script
+##################################################################################################
 
-if len(arguments) > 2:
-    encode = False
-    shortrpoch = False
-    data_set_name = arguments[1]
-    
-    optimization_itr = int(arguments[2])
-    encode = eval(arguments[3])
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--DATA_SET_NAME", help="DATA_SET_NAME can be ['adult', 'unbalanced_credit_card', 'balanced_credit_card']",  default='adult', choices=["adult", "unbalanced_credit_card", "balanced_credit_card"])
+parser.add_argument("-m", "--METHOD_NAME", help="METHOD_NAME can be ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE']", default="GaussianCopula", choices = ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE'])
+parser.add_argument("-e", "--ENCODE", help="ENCODE can be [True, False]", default="False", choices = ["True", "False"])
+parser.add_argument("-i", "--ITR", help="Number of Optimization Iterations", type=int, default=350)
+parser.add_argument("-g", "--GENERATED_DATA_SIZE", help="Number of Generated Data", type=int, default=10000)
+parser.add_argument("-o", "--OUTPUT_DIR", help="Output directory", required=True)
+parser.add_argument("-id", "--ID", help="Experiment ID", type=int, default=1)
+parser.add_argument("-a", "--AUGMENT_DATA_PERCENTAGE", help="Augment Data Percentage", type=float, default=0, choices=np.arange(0, 1.0, 0.01))
+args = parser.parse_args()
 
-    balanced = False
-    if len(arguments) > 4:
-        balanced = eval(arguments[4])
+##################################################################################################
+# Get user defined arguments
+##################################################################################################
+print("arguments: ", args)
+data_set_name = args.DATA_SET_NAME
+method_name = args.METHOD_NAME
+encode = eval(args.ENCODE)
+optimization_itr = args.ITR
+shortrpoch = False
+output_dir = args.OUTPUT_DIR
+experiment = args.ID
+assert experiment >= 1
+augment_data_percentage = args.AUGMENT_DATA_PERCENTAGE
+assert 0 <= augment_data_percentage <= 1
+augment_data = augment_data_percentage > 0
+generated_data_size = args.GENERATED_DATA_SIZE
+assert generated_data_size > 0
 
-    augment_data_percentage = 0
-    augment_data = False
-
-    experiment = arguments[5]
-    random.seed(int(experiment))
-    if len(arguments) > 7:
-        augment_data = True
-        augment_data_percentage = float(arguments[7])
-        assert 0 <= augment_data_percentage <= 1
-else:
-    data_set_name = 'credit_card'
-    data_set_name = 'adult'
-    optimization_itr = 100
-    encode = False
-    balanced = False
-    balanced = True
-    augment_data = False
-    augment_data_percentage = 0
-    shortrpoch = True
-    experiment = 1
+balanced = False
+if data_set_name == "balanced_credit_card":
+    balanced = True    
 
 target = 'income'
 if data_set_name == 'credit_card':
     target = 'Class'
 
 prefix = ''
-if data_set_name == 'credit_card':
-    if balanced:
-        prefix = 'balanced_'
-    else:
-        prefix = 'unbalanced_'
-
 if encode:
     prefix =  "encoded_" + prefix 
 
-outpath = "data/output/ES10HP2/"
-outpath_data_augmentation = "data/outputDataAugmentation/"
-historypath_data_augmentation = "data/historyDataAugmentation/"
+outpath_tuned_params = output_dir + "/output/"
+outpath_experiments = output_dir + "/outputDatExperiments/"
+historypath_experiments = output_dir + "/historyDataExperiments/"
+
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+    os.mkdir(outpath_tuned_params)
+    os.mkdir(outpath_experiments)
+    os.mkdir(historypath_experiments)
+
+if not os.path.exists(outpath_tuned_params):
+    os.mkdir(outpath_tuned_params)
+
+if not os.path.exists(outpath_experiments):
+    os.mkdir(outpath_experiments)
+
+if not os.path.exists(historypath_experiments):
+    os.mkdir(historypath_experiments)
 
 print('data_set_name: ', data_set_name)
 print('target: ', target)
@@ -109,17 +116,13 @@ for column in df.columns:
 initial_columns_ordering = df.columns.values
 
 
-
 ################################################################################################
 # Define functions. These will be moved to utilities.py eventually
 ################################################################################################
 
 
-generated_data_size = 10000
 lmname =['GaussianCopula', 'CTGAN', 'CopulaGAN', 'TVAE']
-outpath_data_augmentation = "data/outputDataAugmentation/"
-historypath_data_augmentation = "data/historyDataAugmentation/"
-outpath_data_results = "data/outputResults/"
+
 def objective_maximize_roc(params):
     # Keep track of the best iteration records
     global output 
@@ -344,7 +347,7 @@ for method_name in lmethods:
     if method_name == "GaussianCopula":
         params_t = {}
     else:
-        params_t = get_tuned_params(method_name, prefix + data_set_name, outpath)
+        params_t = get_tuned_params(method_name, prefix + data_set_name, outpath_tuned_params)
     params_u['method'] = method_name
     params_t['method'] = method_name
     if 'batch_size' not in params_t:
@@ -420,10 +423,10 @@ lrow = [data_set_name, 'SC-GOAT', best_val_roc_u, best_val_roc_t, test_roc_u, te
 lres.append(lrow)
 dfres = pd.DataFrame(lres, columns=['data', 'method', 'untuned_val_auc', 'tuned_val_auc', 'untuned_test_auc', 'tuned_test_auc'])
 dfres['experiment'] = experiment
-dfres.to_csv(outpath_data_augmentation + prefix_temp + data_set_name + "_val_test_auc.csv", index=False)
+dfres.to_csv(outpath_experiments + prefix_temp + data_set_name + "_val_test_auc.csv", index=False)
 
-save_synthetic_data(data_set_name, best_X_synthetic_u, best_y_synthetic_u, balanced, encode, False, augment_data_percentage, experiment, outpath_data_augmentation)
-save_synthetic_data(data_set_name, best_X_synthetic_t, best_y_synthetic_t, balanced, encode, True, augment_data_percentage, experiment, outpath_data_augmentation)
+save_synthetic_data(data_set_name, best_X_synthetic_u, best_y_synthetic_u, balanced, encode, False, augment_data_percentage, experiment, outpath_experiments)
+save_synthetic_data(data_set_name, best_X_synthetic_t, best_y_synthetic_t, balanced, encode, True, augment_data_percentage, experiment, outpath_experiments)
 
 clf_best_param_u["untuned_train_roc"] = train_roc_u
 clf_best_param_u["untuned_val_roc"] = best_val_roc_u
@@ -437,11 +440,11 @@ clf_best_param_t["tuned_total_time_BO"] = total_time_BO_t
 
 clf_best_param_df_u = pd.DataFrame()
 clf_best_param_df_u = clf_best_param_df_u._append(clf_best_param_u, ignore_index = True)
-clf_best_param_df_u.to_csv(outpath_data_augmentation + prefix_temp + data_set_name + "_untuned_" + "_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df_u.to_csv(outpath_experiments + prefix_temp + data_set_name + "_untuned_" + "_models_clf_best_param_xgboost.csv", index=False)
 
 clf_best_param_df_t = pd.DataFrame()
 clf_best_param_df_t = clf_best_param_df_t._append(clf_best_param_t, ignore_index = True)
-clf_best_param_df_t.to_csv(outpath_data_augmentation + prefix_temp + data_set_name + "_tuned_" + "_models_clf_best_param_xgboost.csv", index=False)
+clf_best_param_df_t.to_csv(outpath_experiments + prefix_temp + data_set_name + "_tuned_" + "_models_clf_best_param_xgboost.csv", index=False)
 
-params_history_u.to_csv(historypath_data_augmentation + prefix_temp + data_set_name + "_untuned_" + "_models_params_alpha_history.csv", index=False)
-params_history_u.to_csv(historypath_data_augmentation + prefix_temp + data_set_name + "_tuned_" + "_models_params_alpha_history.csv", index=False)
+params_history_u.to_csv(historypath_experiments + prefix_temp + data_set_name + "_untuned_" + "_models_params_alpha_history.csv", index=False)
+params_history_u.to_csv(historypath_experiments + prefix_temp + data_set_name + "_tuned_" + "_models_params_alpha_history.csv", index=False)
