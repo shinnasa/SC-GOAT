@@ -45,7 +45,7 @@ python code/SupervisedSynthesizer.py -o data_test -i 300 -m TVAE -d adult -e Fal
 
 ### SC-GOAT
 
-To generate the synthetic data using SC-GAOT, then please use the script:
+To generate the synthetic data using SC-GAOT, please use the script:
 
 ```console
 Run_Experiments.py
@@ -54,7 +54,7 @@ Run_Experiments.py
 To see the meaning of each argument:
 
 ```console
-python code/Run_Experiments.py-h 
+python code/Run_Experiments.py -h 
 ```
 
 Here is a simple example:
