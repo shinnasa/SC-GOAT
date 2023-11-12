@@ -23,6 +23,18 @@ from sdv.sampling import Condition
 import warnings
 warnings.simplefilter("ignore")
 
+##################################################################################################
+# Define arguments for the python script
+##################################################################################################
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--DATA_SET_NAME", help="DATA_SET_NAME can be ['adult', 'unbalanced_credit_card', 'balanced_credit_card']",  default='adult', choices=["adult", "unbalanced_credit_card", "balanced_credit_card"])
+parser.add_argument("-m", "--METHOD_NAME", help="METHOD_NAME can be ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE']", default="GaussianCopula", choices = ['CopulaGAN', 'CTGAN', 'GaussianCopula', 'TVAE'])
+parser.add_argument("-e", "--ENCODE", help="ENCODE can be [True, False]", default="False", choices = ["True", "False"])
+parser.add_argument("-i", "--ITR", help="Number of Optimization Iterations", type=int, default=350)
+parser.add_argument("-o", "--OUTPUT_DIR", help="Output directory", required=True)
+args = parser.parse_args()
 
 ##################################################################################################
 # Define functions for Bayesian Optimization
@@ -107,38 +119,42 @@ def trainDT(max_evals:int, method_name):
 ##################################################################################################
 # Get user defined arguments
 ##################################################################################################
-arguments = sys.argv
-print("arguments: ", arguments)
-# assert len(arguments) > 3
-if len(arguments) > 2:
-    data_set_name = arguments[1]
-    target = 'income'
-    if data_set_name == 'balanced_credit_card' or data_set_name == 'unbalanced_credit_card':
-        target = 'Class'
+print("arguments: ", args)
+data_set_name = args.DATA_SET_NAME
+method_name = args.METHOD_NAME
+encode = eval(args.ENCODE)
+optimization_itr = args.ITR
+short_epoch = False
+output_dir = args.OUTPUT_DIR
 
-    method_name = arguments[2]
-    encode = eval(arguments[3]) # either categotical or target
-    optimization_itr = 350
-    short_epoch = False
-else:
-    data_set_name = 'balanced_credit_card'
-    data_set_name = 'adult'
-    method_name = 'GaussianCopula'
-    optimization_itr = 350
-    if data_set_name == 'adult':
-        target = 'income'
-    else:
-        target = "Class"
-    encode = False
-    short_epoch = True
+target = 'income'
+if data_set_name == 'balanced_credit_card' or data_set_name == 'unbalanced_credit_card':
+    target = 'Class'
 
+print("data_set_name: ", data_set_name)
+print("target: ", target)
+print("method_name: ", method_name)
+print("encode: ", encode)
+print("optimization_itr: ", optimization_itr)
+print("output_dir: ", output_dir)
 
 if encode:
     m_name = "encoded_" + data_set_name
 else:
     m_name = data_set_name
 
-if os.path.exists("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"):
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+    os.mkdir(output_dir + "/output/")
+    os.mkdir(output_dir + "/history/")
+
+if not os.path.exists(output_dir + "/output/"):
+    os.mkdir(output_dir + "/output/")
+
+if not os.path.exists(output_dir + "/history/"):
+    os.mkdir(output_dir + "/history/")
+
+if os.path.exists(output_dir + "/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv"):
     raise FileExistsError("This results already exists. Skipping to the next")
 
 ##################################################################################################
@@ -179,17 +195,18 @@ test_auc_first = downstream_loss(first_synth, df_test, target, classifier = "XGB
 ##################################################################################################
 # Save Results
 ##################################################################################################
-clf_best_param["tuned_val_roc"] = best_val_roc
-clf_best_param["untuned_val_roc"] = first_val_roc
-clf_best_param["tuned_test_roc"] = test_auc_best
-clf_best_param["untuned_test_roc"] = test_auc_first
+clf_best_param["tuned_val_roc"] = best_val_roc[1]
+clf_best_param["untuned_val_roc"] = first_val_roc[1]
+clf_best_param["tuned_test_roc"] = test_auc_best[1]
+clf_best_param["untuned_test_roc"] = test_auc_first[1]
 clf_best_param["elapsed_time"] = elapsed_time
+print("clf_best_param: ", clf_best_param)
 df_bparam = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bparam.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv")
+df_bparam.to_csv(output_dir + "/output/" + m_name + "_" + method_name + "_clf_best_param_xgboost.csv")
 
 df_bhp = pd.DataFrame.from_dict(clf_best_param, orient='index', columns=['Value'])
-df_bhp.to_csv("data/output/" + m_name + "_" + method_name + "_clf_best_hp_xgboost.csv")
+df_bhp.to_csv(output_dir + "/output/" + m_name + "_" + method_name + "_clf_best_hp_xgboost.csv")
 
-best_synth.to_csv("data/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
-first_synth.to_csv("data/output/" + m_name + "_untuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
-clf_auc_history.to_csv("data/history/" + m_name + "_" + method_name + "_history_auc_score_xgboost.csv")
+best_synth.to_csv(output_dir + "/output/" + m_name + "_tuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
+first_synth.to_csv(output_dir + "/output/" + m_name + "_untuned_" + method_name + "_synthetic_data_xgboost.csv", index = False)
+clf_auc_history.to_csv(output_dir + "/history/" + m_name + "_" + method_name + "_history_auc_score_xgboost.csv")
